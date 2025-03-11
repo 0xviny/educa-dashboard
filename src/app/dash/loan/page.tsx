@@ -35,7 +35,7 @@ export default function LoanDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-tl from-neutral-600 to-blue-900 p-8 py-16 text-white">
+    <div className="min-h-screen bg-gradient-to-tl from-neutral-900 to-blue-900 p-8 py-16 text-white">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-bold mb-6">📋 Sistema de Empréstimos</h1>
         <div className="bg-neutral-800 p-6 rounded-lg shadow-lg">
@@ -141,9 +141,9 @@ export default function LoanDashboard() {
                 <thead>
                   <tr className="bg-gray-700 text-left">
                     <th className="px-4 py-3">ID</th>
-                    <th className="px-4 py-3">Aluno</th>
+                    <th className="px-4 py-3">Professor</th>
                     <th className="px-4 py-3">Tipo</th>
-                    <th className="px-4 py-3">ID do Dispositivo</th>
+                    <th className="px-4 py-3">Número do Dispositivo</th>
                     <th className="px-4 py-3">Data/Hora</th>
                   </tr>
                 </thead>
