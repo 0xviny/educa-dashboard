@@ -33,18 +33,18 @@ export default function Page() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-purple-500 to-blue-500">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-tl from-white/75 to-blue-500">
       <div className="flex flex-col justify-center bg-black/50 text-white p-8 rounded-2xl shadow-lg w-full max-w-lg h-[600px] relative">
         <h1 className="text-center text-2xl font-bold mb-2">EDUCA:DASH</h1>
         <p className="text-center text-lg mb-6">Olá, 👋 Bem-vindo de volta!</p>
         <p className="text-center text-sm mb-4">Por favor, preencha os campos abaixo:</p>
 
         <div className="mb-4">
-          <label className="block text-sm mb-1">RA - Registro do Professor</label>
+          <label className="block text-sm mb-1">RG - Registro do Professor</label>
           <input
             type="text"
-            placeholder="Por favor, insira o seu RA do professor"
-            className="w-full p-3 bg-gray-800 rounded-lg border border-gray-600 focus:outline-none focus:border-purple-400"
+            placeholder="Por favor, insira o seu RG do professor"
+            className="w-full p-3 bg-gray-800 rounded-lg border border-gray-600 focus:outline-none focus:border-blue-400"
           />
         </div>
 
@@ -53,13 +53,13 @@ export default function Page() {
           <input
             type="password"
             placeholder="Por favor, insira sua senha"
-            className="w-full p-3 bg-gray-800 rounded-lg border border-gray-600 focus:outline-none focus:border-purple-400"
+            className="w-full p-3 bg-gray-800 rounded-lg border border-gray-600 focus:outline-none focus:border-blue-400"
           />
         </div>
 
         <button
           onClick={handleLogin}
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition cursor-pointer"
+          className="w-full bg-blue-500 hover:bg-blue-500/75 text-white font-bold py-3 rounded-lg transition cursor-pointer"
         >
           Entrar
         </button>
@@ -67,7 +67,7 @@ export default function Page() {
         <p className="text-center text-xs text-gray-400 mt-4">
           Este é um projeto fictício para demonstrar um sistema para ajudar a escola em sua gestão
           de Controle de Advertências e Controle de Notebooks e Tablets da escola. Projeto criado
-          por: <span className="text-purple-400 cursor-pointer">3° DS @ 2025</span>
+          por: <span className="text-blue-400 cursor-pointer">3° DS @ 2025</span>
         </p>
       </div>
     </div>

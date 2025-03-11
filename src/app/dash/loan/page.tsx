@@ -11,8 +11,8 @@ interface LoanRecord {
 }
 
 export default function LoanDashboard() {
-  const [totalTablets, setTotalTablets] = useState<number>(0);
-  const [totalNotebooks, setTotalNotebooks] = useState<number>(0);
+  const [totalTablets, setTotalTablets] = useState<number>(40);
+  const [totalNotebooks, setTotalNotebooks] = useState<number>(30);
   const [loanRecords, setLoanRecords] = useState<LoanRecord[]>([]);
   const [newStudent, setNewStudent] = useState<string>("");
   const [newDeviceType, setNewDeviceType] = useState<string>("Tablet");
@@ -35,7 +35,7 @@ export default function LoanDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-slate-950 to-indigo-950/75 backdrop-blur-xl p-8 py-16 text-white">
+    <div className="min-h-screen bg-gradient-to-tl from-neutral-600 to-blue-900 p-8 py-16 text-white">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-bold mb-6">📋 Sistema de Empréstimos</h1>
         <div className="bg-neutral-800 p-6 rounded-lg shadow-lg">
@@ -72,33 +72,51 @@ export default function LoanDashboard() {
             <h2 className="text-2xl font-semibold mb-4">Adicionar Empréstimo</h2>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm mb-1">Nome do Aluno</label>
+                <label className="block text-sm mb-1">Nome do Professor</label>
                 <input
                   type="text"
                   value={newStudent}
                   onChange={(e) => setNewStudent(e.target.value)}
-                  placeholder="Nome do aluno"
+                  placeholder="Nome do Professor"
                   className="w-full p-2 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:border-blue-400"
                 />
               </div>
               <div>
                 <label className="block text-sm mb-1">Tipo de Dispositivo</label>
-                <select
-                  value={newDeviceType}
-                  onChange={(e) => setNewDeviceType(e.target.value)}
-                  className="w-full p-2 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:border-blue-400"
-                >
-                  <option value="Tablet">Tablet</option>
-                  <option value="Notebook">Notebook</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={newDeviceType}
+                    onChange={(e) => setNewDeviceType(e.target.value)}
+                    className="w-full p-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:border-blue-400 appearance-none pr-10"
+                  >
+                    <option value="Tablet">Tablet</option>
+                    <option value="Notebook">Notebook</option>
+                  </select>
+                  {/* Ícone da seta */}
+                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
+
               <div>
-                <label className="block text-sm mb-1">ID do Dispositivo</label>
+                <label className="block text-sm mb-1">Número do Dispositivo</label>
                 <input
                   type="text"
                   value={newDeviceId}
                   onChange={(e) => setNewDeviceId(e.target.value)}
-                  placeholder="ID do dispositivo"
+                  placeholder="Número do dispositivo"
                   className="w-full p-2 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:border-blue-400"
                 />
               </div>
@@ -121,23 +139,23 @@ export default function LoanDashboard() {
             <div className="overflow-x-auto">
               <table className="min-w-full table-auto">
                 <thead>
-                  <tr className="bg-gray-700">
-                    <th className="px-4 py-2">ID</th>
-                    <th className="px-4 py-2">Aluno</th>
-                    <th className="px-4 py-2">Tipo</th>
-                    <th className="px-4 py-2">ID do Dispositivo</th>
-                    <th className="px-4 py-2">Data/Hora</th>
+                  <tr className="bg-gray-700 text-left">
+                    <th className="px-4 py-3">ID</th>
+                    <th className="px-4 py-3">Aluno</th>
+                    <th className="px-4 py-3">Tipo</th>
+                    <th className="px-4 py-3">ID do Dispositivo</th>
+                    <th className="px-4 py-3">Data/Hora</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loanRecords.length > 0 ? (
                     loanRecords.map((record) => (
                       <tr key={record.id} className="border-b border-gray-600">
-                        <td className="px-4 py-2">{record.id}</td>
-                        <td className="px-4 py-2">{record.student}</td>
-                        <td className="px-4 py-2">{record.deviceType}</td>
-                        <td className="px-4 py-2">{record.deviceId}</td>
-                        <td className="px-4 py-2">{record.borrowDate.toLocaleString()}</td>
+                        <td className="px-4 py-3">{record.id}</td>
+                        <td className="px-4 py-3">{record.student}</td>
+                        <td className="px-4 py-3">{record.deviceType}</td>
+                        <td className="px-4 py-3">{record.deviceId}</td>
+                        <td className="px-4 py-3">{record.borrowDate.toLocaleString()}</td>
                       </tr>
                     ))
                   ) : (
