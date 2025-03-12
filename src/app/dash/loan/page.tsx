@@ -10,56 +10,130 @@ interface LoanRecord {
   borrowDate: Date;
 }
 
+interface ToastProps {
+  message: string;
+  type: "error" | "success";
+  duration?: number;
+  onClose: () => void;
+}
+
+const Toast: React.FC<ToastProps> = ({ message, type, duration = 3000, onClose }) => {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    setShow(true);
+    const timer = setTimeout(() => {
+      setShow(false);
+      setTimeout(() => {
+        onClose();
+      }, 3000);
+    }, duration);
+    return () => clearTimeout(timer);
+  }, [duration, onClose]);
+
+  return (
+    <div
+      className={`fixed bottom-4 right-4 flex items-center justify-center z-50 p-4 text-white rounded-md transition-all duration-500 ease-in-out transform ${
+        type === "error" ? "bg-red-500" : "bg-green-500"
+      } ${show ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
+    >
+      {message}
+      <button className="ml-4 text-white cursor-pointer" onClick={onClose}>
+        <svg
+          className="w-4 h-4"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fillRule="evenodd"
+            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </button>
+    </div>
+  );
+};
+
 export default function LoanDashboard() {
   const [totalTablets, setTotalTablets] = useState<number>(40);
   const [totalNotebooks, setTotalNotebooks] = useState<number>(30);
-  const [loanRecords, setLoanRecords] = useState<LoanRecord[]>(() => {
-    const savedRecords = localStorage.getItem("loanRecords");
-    return savedRecords ? JSON.parse(savedRecords) : [];
-  });
+  const [loanRecords, setLoanRecords] = useState<LoanRecord[]>([]);
   const [newStudent, setNewStudent] = useState<string>("");
   const [newDeviceType, setNewDeviceType] = useState<string>("Tablet");
   const [newDeviceId, setNewDeviceId] = useState<string>("");
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "error" | "success" | "";
+  }>({ message: "", type: "" });
+
+  // Carrega os valores salvos do localStorage
+  useEffect(() => {
+    const savedTablets = localStorage.getItem("totalTablets");
+    if (savedTablets) {
+      setTotalTablets(Number(savedTablets));
+    }
+    const savedNotebooks = localStorage.getItem("totalNotebooks");
+    if (savedNotebooks) {
+      setTotalNotebooks(Number(savedNotebooks));
+    }
+    const savedRecords = localStorage.getItem("loanRecords");
+    if (savedRecords) {
+      setLoanRecords(JSON.parse(savedRecords));
+    }
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("loanRecords", JSON.stringify(loanRecords));
   }, [loanRecords]);
 
+  useEffect(() => {
+    localStorage.setItem("totalTablets", totalTablets.toString());
+  }, [totalTablets]);
+
+  useEffect(() => {
+    localStorage.setItem("totalNotebooks", totalNotebooks.toString());
+  }, [totalNotebooks]);
+
+  const showNotification = (message: string, type: "error" | "success") => {
+    setNotification({ message, type });
+  };
+
   const handleAddLoan = () => {
     if (!newStudent || !newDeviceId) {
-      alert("Preencha todos os campos!");
+      showNotification("Preencha todos os campos!", "error");
       return;
     }
-  
-    // Validação para aceitar apenas números separados por vírgula
-    const deviceIdsArray = newDeviceId.split(",").map(id => id.trim());
-    const isValidFormat = deviceIdsArray.every(id => /^\d+$/.test(id));
-  
+
+    const deviceIdsArray = newDeviceId.split(",").map((id) => id.trim());
+    const isValidFormat = deviceIdsArray.every((id) => /^\d+$/.test(id));
+
     if (!isValidFormat) {
-      alert("Os números dos dispositivos devem conter apenas dígitos e serem separados por vírgula.");
+      showNotification(
+        "Os números dos dispositivos devem conter apenas dígitos e serem separados por vírgula.",
+        "error"
+      );
       return;
     }
-  
-    // Verifica se os dispositivos já foram emprestados
-    const allLoanedDevices = loanRecords.flatMap(record => record.deviceId);
-    const hasDuplicate = deviceIdsArray.some(id => allLoanedDevices.includes(id));
-  
+
+    const allLoanedDevices = loanRecords.flatMap((record) => record.deviceId);
+    const hasDuplicate = deviceIdsArray.some((id) => allLoanedDevices.includes(id));
+
     if (hasDuplicate) {
-      alert("Alguns dispositivos já estão emprestados!");
+      showNotification("Alguns dispositivos já estão emprestados!", "error");
       return;
     }
-  
-    // Verifica se há quantidade suficiente disponível
+
     if (newDeviceType === "Tablet" && deviceIdsArray.length > totalTablets) {
-      alert("Quantidade de tablets insuficiente!");
+      showNotification("Quantidade de tablets insuficiente!", "error");
       return;
     }
     if (newDeviceType === "Notebook" && deviceIdsArray.length > totalNotebooks) {
-      alert("Quantidade de notebooks insuficiente!");
+      showNotification("Quantidade de notebooks insuficiente!", "error");
       return;
     }
-  
-    // Criando o novo empréstimo
+
     const newLoan: LoanRecord = {
       id: Date.now(),
       student: newStudent,
@@ -67,65 +141,51 @@ export default function LoanDashboard() {
       deviceId: deviceIdsArray,
       borrowDate: new Date(),
     };
-  
+
     setLoanRecords([...loanRecords, newLoan]);
-  
-    // Atualizando a quantidade de dispositivos disponíveis
+
     if (newDeviceType === "Tablet") {
-      setTotalTablets(prev => prev - deviceIdsArray.length);
+      setTotalTablets((prev) => prev - deviceIdsArray.length);
     } else if (newDeviceType === "Notebook") {
-      setTotalNotebooks(prev => prev - deviceIdsArray.length);
+      setTotalNotebooks((prev) => prev - deviceIdsArray.length);
     }
-  
-    // Resetando os campos do formulário
+
+    showNotification("Empréstimo adicionado com sucesso!", "success");
+
     setNewStudent("");
     setNewDeviceId("");
     setNewDeviceType("Tablet");
   };
-  
 
   const handleReturnLoan = (id: number) => {
-    const recordToReturn = loanRecords.find(record => record.id === id);
+    const recordToReturn = loanRecords.find((record) => record.id === id);
     if (recordToReturn) {
-      setLoanRecords(loanRecords.filter(record => record.id !== id));
+      setLoanRecords(loanRecords.filter((record) => record.id !== id));
 
       if (recordToReturn.deviceType === "Tablet") {
-        setTotalTablets(prev => prev + recordToReturn.deviceId.length);
+        setTotalTablets((prev) => prev + recordToReturn.deviceId.length);
       } else if (recordToReturn.deviceType === "Notebook") {
-        setTotalNotebooks(prev => prev + recordToReturn.deviceId.length);
+        setTotalNotebooks((prev) => prev + recordToReturn.deviceId.length);
       }
+      showNotification("Empréstimo devolvido com sucesso!", "success");
     }
   };
-
 
   return (
     <div className="min-h-screen bg-gradient-to-tl from-neutral-900 to-blue-900 p-8 py-16 text-white">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-bold mb-6">📋 Sistema de Empréstimos</h1>
+        {notification.message && (
+          <Toast
+            message={notification.message}
+            type={notification.type as "error" | "success"}
+            onClose={() => setNotification({ message: "", type: "" })}
+          />
+        )}
         <div className="bg-neutral-800 p-6 rounded-lg shadow-lg">
           <div>
-            <h2 className="text-2xl font-semibold mb-2">⚙ Configurar Totais</h2>
-            <div className="flex flex-col md:flex-row md:space-x-6">
-              <div className="mb-4 md:mb-0">
-                <label className="block text-sm mb-1">Total de Tablets</label>
-                <input
-                  type="number"
-                  value={totalTablets}
-                  onChange={(e) => setTotalTablets(Number(e.target.value))}
-                  className="p-2 rounded-lg bg-neutral-700 border border-neutral-600 focus:outline-none focus:border-blue-400 w-32"
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Total de Notebooks</label>
-                <input
-                  type="number"
-                  value={totalNotebooks}
-                  onChange={(e) => setTotalNotebooks(Number(e.target.value))}
-                  className="p-2 rounded-lg bg-neutral-700 border border-neutral-600 focus:outline-none focus:border-blue-400 w-32"
-                />
-              </div>
-            </div>
-            <p className="mt-2">
+            <h2 className="text-2xl font-semibold mb-2">Totais de Dispositivos</h2>
+            <p>
               Tablets disponíveis: {totalTablets} | Notebooks disponíveis: {totalNotebooks}
             </p>
           </div>
@@ -175,7 +235,9 @@ export default function LoanDashboard() {
               </div>
 
               <div>
-                <label className="block text-sm mb-1">Número do Dispositivo (separe por vírgulas)</label>
+                <label className="block text-sm mb-1">
+                  Número do Dispositivo (separe por vírgulas)
+                </label>
                 <input
                   type="text"
                   value={newDeviceId}
@@ -219,9 +281,16 @@ export default function LoanDashboard() {
                         <td className="px-4 py-3">{record.student}</td>
                         <td className="px-4 py-3">{record.deviceType}</td>
                         <td className="px-4 py-3">{record.deviceId.join(", ")}</td>
-                        <td className="px-4 py-3">{new Date(record.borrowDate).toLocaleString()}</td>
                         <td className="px-4 py-3">
-                          <button onClick={() => handleReturnLoan(record.id)} className="bg-red-500 py-2 px-5 rounded-md cursor-pointer">Devolver</button>
+                          {new Date(record.borrowDate).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => handleReturnLoan(record.id)}
+                            className="bg-red-500 py-2 px-5 rounded-md cursor-pointer"
+                          >
+                            Devolver
+                          </button>
                         </td>
                       </tr>
                     ))
