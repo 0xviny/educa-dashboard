@@ -172,7 +172,7 @@ export default function LoanDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-tl from-neutral-900 to-blue-900 p-8 py-16 text-white">
+    <div className="min-h-screen bg-gradient-to-tl from-neutral-900 to-blue-500 p-8 py-16 text-white">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-bold mb-6">📋 Sistema de Empréstimos</h1>
         {notification.message && (
