@@ -117,8 +117,10 @@ export default function LoanDashboard() {
       return;
     }
 
-    const allLoanedDevices = loanRecords.flatMap((record) => record.deviceId);
-    const hasDuplicate = deviceIdsArray.some((id) => allLoanedDevices.includes(id));
+    const hasDuplicate = deviceIdsArray.some((id) =>
+      loanRecords.some((record) => record.deviceId.includes(id) && record.deviceType === newDeviceType)
+    );
+    
 
     if (hasDuplicate) {
       showNotification("Alguns dispositivos já estão emprestados!", "error");
