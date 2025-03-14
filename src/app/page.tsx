@@ -9,23 +9,21 @@ export default function Page() {
   const [authToken, setAuthToken] = useLocalStorage<string>("authToken", "");
   const [isLogged, setIsLogged] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [fade, setFade] = useState("opacity-0");
+  const [fadeIn, setFadeIn] = useState(false);
 
   useEffect(() => {
     if (authToken) {
       setIsLogged(true);
     }
     setLoading(false);
-    setTimeout(() => setFade("opacity-100"), 50); // Ativa o fade-in logo depois de carregar
+    setTimeout(() => setFadeIn(true), 100); // Pequeno delay para o efeito de entrada
   }, [authToken]);
 
+  // Função para login com refresh imediato e transição suave depois
   const handleLogin = () => {
-    setFade("opacity-0"); // Ativa o fade-out antes de mudar de tela
-    setTimeout(() => {
-      const token = uuidv4();
-      setAuthToken(token);
-      setIsLogged(true);
-    }, 300); // Muda para o Dashboard depois do fade-out
+    const token = uuidv4();
+    setAuthToken(token);
+    setIsLogged(true);
   };
 
   if (loading) {
@@ -37,7 +35,7 @@ export default function Page() {
   }
 
   return (
-    <main className={`flex items-center justify-center transition-opacity duration-300 ${fade}`}>
+    <main className={`flex items-center justify-center transition-opacity duration-500 ${fadeIn ? "opacity-100" : "opacity-0"}`}>
       <div className="flex flex-col justify-center bg-zinc-950 text-white p-8 rounded-2xl shadow-lg w-full max-w-lg h-[600px] relative mt-20">
         <h1 className="text-center text-2xl font-bold bg-gradient-to-tl from-purple-600 to-blue-600 text-transparent bg-clip-text mb-7">
           EDUCA DASHBOARD

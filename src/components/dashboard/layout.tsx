@@ -81,6 +81,21 @@ export default function Dashboard() {
     setIsModalOpen(false);
   };
 
+  const handleReturnLoan = (id: number) => {
+    const recordToReturn = loanRecords.find((record) => record.id === id);
+    if (recordToReturn) {
+      setLoanRecords(loanRecords.filter((record) => record.id !== id));
+
+      if (recordToReturn.deviceType === "Tablet") {
+        setTotalTablets((prev) => prev + recordToReturn.deviceId.length);
+      } else if (recordToReturn.deviceType === "Notebook") {
+        setTotalNotebooks((prev) => prev + recordToReturn.deviceId.length);
+      }
+      addNotification("Empréstimo devolvido com sucesso!", "success");
+    }
+  };
+
+
   return (
     <main className="p-8 max-w-7xl mx-auto">
       <section className="mb-8">
@@ -88,10 +103,10 @@ export default function Dashboard() {
         <p className="text-gray-200">Gerencie os empréstimos de dispositivos da escola.</p>
       </section>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 border-b border-zinc-900 py-10">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="block bg-neutral-800 rounded-lg shadow p-6 hover:bg-neutral-700 transition"
+          className="block text-start bg-neutral-800 rounded-lg shadow p-6 hover:bg-neutral-700 transition cursor-pointer"
         >
           <h3 className="text-xl font-bold mb-2">Empréstimos</h3>
           <p className="text-sm text-gray-300">Controle de notebooks e tablets.</p>
@@ -111,6 +126,53 @@ export default function Dashboard() {
           </p>
         </div>
       </section>
+
+      <div className="pt-10">
+        <h2 className="text-2xl font-semibold mb-4">Registros de Empréstimos</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full table-auto">
+            <thead>
+              <tr className="bg-neutral-800 text-left">
+                <th className="px-4 py-3">ID</th>
+                <th className="px-4 py-3">Professor</th>
+                <th className="px-4 py-3">Tipo</th>
+                <th className="px-4 py-3">Número do Dispositivo</th>
+                <th className="px-4 py-3">Data/Hora</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {loanRecords.length > 0 ? (
+                loanRecords.map((record) => (
+                  <tr key={record.id} className="border-b border-gray-600">
+                    <td className="px-4 py-3">{record.id}</td>
+                    <td className="px-4 py-3">{record.student}</td>
+                    <td className="px-4 py-3">{record.deviceType}</td>
+                    <td className="px-4 py-3">{record.deviceId.join(", ")}</td>
+                    <td className="px-4 py-3">
+                      {new Date(record.borrowDate).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => handleReturnLoan(record.id)}
+                        className="bg-red-500 py-2 px-5 rounded-md cursor-pointer"
+                      >
+                        Devolver
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="text-center py-4 text-gray-400">
+                    Nenhum registro de empréstimo encontrado.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {notifications
         .filter((notif) => notif.visible)
