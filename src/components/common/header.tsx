@@ -3,21 +3,33 @@
 import { useEffect, useRef, useState } from "react";
 import { useNotifications, Notification } from "@/hooks/useNotifications";
 import { Bell, EllipsisVertical } from "lucide-react";
+import useLocalStorage from "@/hooks/useLocalStorage"; // Importamos o hook
 
 export default function Header() {
+  const [isLogged, setIsLogged] = useState(false);
   const [userName, setUserName] = useState("Professor(a)");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { notifications, addNotification, removeNotification, setNotifications } =
-    useNotifications();
+  // Pegamos as funções e o array de notificações
+  const { notifications, addNotification, removeNotification } = useNotifications();
+
+  // Agora usamos o hook para ler o token (ao invés de localStorage direto)
+  const [authToken] = useLocalStorage<string>("authToken", "");
 
   useEffect(() => {
     const storedName = localStorage.getItem("userName");
     if (storedName) {
       setUserName(storedName);
     }
-  }, []);
+
+    // Se o authToken existir, estamos logados; se não, não estamos.
+    if (authToken) {
+      setIsLogged(true);
+    } else {
+      setIsLogged(false);
+    }
+  }, [authToken]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -27,7 +39,7 @@ export default function Header() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [dropdownRef]);
+  }, []);
 
   const handleCopy = (message: string) => {
     navigator.clipboard.writeText(message).then(() => {
@@ -35,6 +47,7 @@ export default function Header() {
     });
   };
 
+  // Mantemos o NotificationItem igual, sem renomear nada
   const NotificationItem = ({ notif }: { notif: Notification }) => {
     const [showActions, setShowActions] = useState(false);
 
@@ -80,9 +93,8 @@ export default function Header() {
       <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
         EDUCA DASHBOARD
       </h1>
-      <div className="flex items-center space-x-4">
+      <div className={`${isLogged ? "flex" : "hidden"} items-center space-x-4`}>
         <p className="hidden sm:block text-sm text-gray-200">Olá, {userName}!</p>
-
         <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
           <span className="text-white font-bold">{userName.charAt(0)}</span>
         </div>

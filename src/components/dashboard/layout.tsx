@@ -97,7 +97,6 @@ export default function Dashboard() {
           <p className="text-sm text-gray-300">Controle de notebooks e tablets.</p>
         </button>
 
-        {/* Outros cards (exemplo: Advertências, Relatórios) */}
         <div className="bg-neutral-800 rounded-lg shadow p-6 opacity-50 cursor-not-allowed">
           <h3 className="text-xl font-bold mb-2">Advertências</h3>
           <p className="text-sm text-gray-300">
