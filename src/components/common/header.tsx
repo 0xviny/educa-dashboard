@@ -40,7 +40,7 @@ export default function Header() {
 
     return (
       <div className="flex items-center justify-between border-b border-gray-200 py-1">
-        <span className="text-sm text-gray-800">{notif.message}</span>
+        <span className="text-sm">{notif.message}</span>
         <div className="relative">
           <button
             onClick={() => setShowActions((prev) => !prev)}
@@ -104,9 +104,9 @@ export default function Header() {
               <div className="p-4">
                 <h3 className="font-semibold">Notificações</h3>
                 {notifications.length === 0 ? (
-                  <p className="text-gray-600 text-sm">Sem notificações.</p>
+                  <p className="text-white/75 text-sm">Sem notificações.</p>
                 ) : (
-                  <div className="mt-2 max-h-60 overflow-y-auto">
+                  <div className="text-white mt-2 max-h-60 overflow-y-auto">
                     {notifications.map((notif) => (
                       <NotificationItem key={notif.id} notif={notif} />
                     ))}
