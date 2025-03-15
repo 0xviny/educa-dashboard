@@ -148,7 +148,7 @@ export default function Dashboard() {
           <div className="overflow-x-auto overflow-y-auto max-h-80">
             <table className="min-w-full table-auto">
               <thead>
-                <tr className="bg-neutral-800 text-left">
+                <tr className="bg-neutral-800/75 text-left">
                   <th className="px-4 py-3">ID</th>
                   <th className="px-4 py-3">Professor</th>
                   <th className="px-4 py-3">Tipo</th>
