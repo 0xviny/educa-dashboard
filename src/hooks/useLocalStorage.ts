@@ -17,14 +17,12 @@ function useLocalStorage<T>(key: string, initialValue: T) {
   });
 
   useEffect(() => {
-    // Evento nativo que só dispara em outra aba:
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === key) {
         setStoredValue(event.newValue ? JSON.parse(event.newValue) : initialValue);
       }
     };
 
-    // Evento customizado para notificar atualizações na mesma aba:
     const handleLocalStorageUpdate = () => {
       try {
         const item = window.localStorage.getItem(key);
@@ -48,7 +46,6 @@ function useLocalStorage<T>(key: string, initialValue: T) {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
       window.localStorage.setItem(key, JSON.stringify(valueToStore));
-      // Dispara o evento customizado para notificar outras instâncias na mesma aba
       window.dispatchEvent(new Event("localStorageUpdate"));
     } catch (error) {
       console.error(error);

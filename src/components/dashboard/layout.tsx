@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Modal from "@/components/common/modal";
 import Toast from "@/components/common/toast";
 import { useNotifications } from "@/hooks/useNotifications";
+import DefaultTabs from "../mixed/tabs";
 
 interface LoanRecord {
   id: number;
@@ -23,6 +24,12 @@ export default function Dashboard() {
   const [newDeviceType, setNewDeviceType] = useState<string>("Tablet");
   const [newDeviceId, setNewDeviceId] = useState<string>("");
   const { notifications, addNotification, hideNotification } = useNotifications();
+  const [activeTab, setActiveTab] = useState<"loans" | "warnings">("loans");
+
+  const tabs = [
+    { id: "loans", label: "Empréstimos" },
+    { id: "warnings", label: "Advertências" },
+  ];
 
   useEffect(() => {
     setUserName(localStorage.getItem("userName") || "Professor(a)");
@@ -95,7 +102,6 @@ export default function Dashboard() {
     }
   };
 
-
   return (
     <main className="p-8 max-w-7xl mx-auto">
       <section className="mb-8">
@@ -106,20 +112,20 @@ export default function Dashboard() {
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 border-b border-zinc-900 py-10">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="block text-start bg-neutral-800 rounded-lg shadow p-6 hover:bg-neutral-700 transition cursor-pointer"
+          className="block text-start bg-neutral-900 rounded-lg shadow p-6 hover:bg-neutral-900/75 transition cursor-pointer"
         >
           <h3 className="text-xl font-bold mb-2">Empréstimos</h3>
           <p className="text-sm text-gray-300">Controle de notebooks e tablets.</p>
         </button>
 
-        <div className="bg-neutral-800 rounded-lg shadow p-6 opacity-50 cursor-not-allowed">
+        <div className="bg-neutral-900 rounded-lg shadow p-6 opacity-50 cursor-not-allowed">
           <h3 className="text-xl font-bold mb-2">Advertências</h3>
           <p className="text-sm text-gray-300">
             (Em breve) Módulo para registrar e acompanhar advertências de alunos.
           </p>
         </div>
 
-        <div className="bg-neutral-800 rounded-lg shadow p-6 opacity-50 cursor-not-allowed">
+        <div className="bg-neutral-900 rounded-lg shadow p-6 opacity-50 cursor-not-allowed">
           <h3 className="text-xl font-bold mb-2">Relatórios</h3>
           <p className="text-sm text-gray-300">
             (Em breve) Gere relatórios de uso, estatísticas de advertências e mais.
@@ -127,52 +133,68 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <div className="pt-10">
-        <h2 className="text-2xl font-semibold mb-4">Registros de Empréstimos</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full table-auto">
-            <thead>
-              <tr className="bg-neutral-800 text-left">
-                <th className="px-4 py-3">ID</th>
-                <th className="px-4 py-3">Professor</th>
-                <th className="px-4 py-3">Tipo</th>
-                <th className="px-4 py-3">Número do Dispositivo</th>
-                <th className="px-4 py-3">Data/Hora</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {loanRecords.length > 0 ? (
-                loanRecords.map((record) => (
-                  <tr key={record.id} className="border-b border-gray-600">
-                    <td className="px-4 py-3">{record.id}</td>
-                    <td className="px-4 py-3">{record.student}</td>
-                    <td className="px-4 py-3">{record.deviceType}</td>
-                    <td className="px-4 py-3">{record.deviceId.join(", ")}</td>
-                    <td className="px-4 py-3">
-                      {new Date(record.borrowDate).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleReturnLoan(record.id)}
-                        className="bg-red-500 py-2 px-5 rounded-md cursor-pointer"
-                      >
-                        Devolver
-                      </button>
+      <section className="my-8 bg-zinc-950 w-min py-2 px-2 rounded-lg">
+        <DefaultTabs
+          tabs={tabs}
+          activeTab={activeTab}
+          setActiveTab={(tabId) => setActiveTab(tabId as "loans" | "warnings")}
+          cursor="bg-zinc-900"
+        />
+      </section>
+
+      {activeTab === "loans" && (
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">Registros de Empréstimos</h2>
+          <div className="overflow-x-auto overflow-y-auto max-h-80">
+            <table className="min-w-full table-auto">
+              <thead>
+                <tr className="bg-neutral-800 text-left">
+                  <th className="px-4 py-3">ID</th>
+                  <th className="px-4 py-3">Professor</th>
+                  <th className="px-4 py-3">Tipo</th>
+                  <th className="px-4 py-3">Número do Dispositivo</th>
+                  <th className="px-4 py-3">Data/Hora</th>
+                  <th className="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {loanRecords.length > 0 ? (
+                  loanRecords.map((record) => (
+                    <tr key={record.id} className="border-b border-gray-600">
+                      <td className="px-4 py-3">{record.id}</td>
+                      <td className="px-4 py-3">{record.student}</td>
+                      <td className="px-4 py-3">{record.deviceType}</td>
+                      <td className="px-4 py-3">{record.deviceId.join(", ")}</td>
+                      <td className="px-4 py-3">{new Date(record.borrowDate).toLocaleString()}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleReturnLoan(record.id)}
+                          className="bg-red-500 py-2 px-5 rounded-md cursor-pointer"
+                        >
+                          Devolver
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="text-center py-4 text-gray-400">
+                      Nenhum registro de empréstimo encontrado.
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="text-center py-4 text-gray-400">
-                    Nenhum registro de empréstimo encontrado.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {activeTab === "warnings" && (
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">Advertências</h2>
+          <p className="text-gray-300">Módulo de advertências em desenvolvimento.</p>
+        </section>
+      )}
 
       {notifications
         .filter((notif) => notif.visible)

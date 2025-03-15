@@ -16,10 +16,9 @@ export default function Page() {
       setIsLogged(true);
     }
     setLoading(false);
-    setTimeout(() => setFadeIn(true), 100); // Pequeno delay para o efeito de entrada
+    setTimeout(() => setFadeIn(true), 100);
   }, [authToken]);
 
-  // Função para login com refresh imediato e transição suave depois
   const handleLogin = () => {
     const token = uuidv4();
     setAuthToken(token);

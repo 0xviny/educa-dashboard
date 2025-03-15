@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNotifications, Notification } from "@/hooks/useNotifications";
 import { Bell, EllipsisVertical } from "lucide-react";
-import useLocalStorage from "@/hooks/useLocalStorage"; // Importamos o hook
+import useLocalStorage from "@/hooks/useLocalStorage";
 
 export default function Header() {
   const [isLogged, setIsLogged] = useState(false);
@@ -11,10 +11,8 @@ export default function Header() {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Pegamos as funções e o array de notificações
   const { notifications, addNotification, removeNotification } = useNotifications();
 
-  // Agora usamos o hook para ler o token (ao invés de localStorage direto)
   const [authToken] = useLocalStorage<string>("authToken", "");
 
   useEffect(() => {
@@ -23,7 +21,6 @@ export default function Header() {
       setUserName(storedName);
     }
 
-    // Se o authToken existir, estamos logados; se não, não estamos.
     if (authToken) {
       setIsLogged(true);
     } else {
@@ -47,7 +44,6 @@ export default function Header() {
     });
   };
 
-  // Mantemos o NotificationItem igual, sem renomear nada
   const NotificationItem = ({ notif }: { notif: Notification }) => {
     const [showActions, setShowActions] = useState(false);
 
