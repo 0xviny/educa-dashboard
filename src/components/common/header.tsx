@@ -95,7 +95,7 @@ export default function Header() {
           <span className="text-white font-bold">{userName.charAt(0)}</span>
         </div>
 
-        <div className="relative" ref={dropdownRef}>
+        {/* <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowDropdown((prev) => !prev)}
             className="text-gray-200 relative cursor-pointer"
@@ -123,7 +123,7 @@ export default function Header() {
               </div>
             </div>
           )}
-        </div>
+        </div> */}
       </div>
     </header>
   );

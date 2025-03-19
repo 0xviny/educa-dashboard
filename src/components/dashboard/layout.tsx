@@ -14,35 +14,101 @@ interface LoanRecord {
   borrowDate: Date;
 }
 
+interface WarningRecord {
+  id: number;
+  studentName: string;
+  number: string;
+  series: string;
+  subject1: string;
+  signature1: string;
+}
+
 export default function Dashboard() {
-  const [userName, setUserName] = useState("Professor(a)");
+  // Inicializa os estados lendo os dados do localStorage, se existirem.
+  const [userName, setUserName] = useState<string>(() => {
+    return typeof window !== "undefined"
+      ? localStorage.getItem("userName") || "Professor(a)"
+      : "Professor(a)";
+  });
+
+  const [totalTablets, setTotalTablets] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("totalTablets");
+      return stored ? Number(stored) : 40;
+    }
+    return 40;
+  });
+
+  const [totalNotebooks, setTotalNotebooks] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("totalNotebooks");
+      return stored ? Number(stored) : 30;
+    }
+    return 30;
+  });
+
+  const [loanRecords, setLoanRecords] = useState<LoanRecord[]>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("loanRecords");
+      return stored ? JSON.parse(stored) : [];
+    }
+    return [];
+  });
+
+  const [warningRecords, setWarningRecords] = useState<WarningRecord[]>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("warningRecords");
+      return stored ? JSON.parse(stored) : [];
+    }
+    return [];
+  });
+
+  // Outras variáveis de estado
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [totalTablets, setTotalTablets] = useState<number>(40);
-  const [totalNotebooks, setTotalNotebooks] = useState<number>(30);
-  const [loanRecords, setLoanRecords] = useState<LoanRecord[]>([]);
   const [newStudent, setNewStudent] = useState<string>("");
   const [newDeviceType, setNewDeviceType] = useState<string>("Tablet");
   const [newDeviceId, setNewDeviceId] = useState<string>("");
   const { notifications, addNotification, hideNotification } = useNotifications();
   const [activeTab, setActiveTab] = useState<"loans" | "warnings">("loans");
 
+  // Estados e variáveis para advertências
+  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [newStudentName, setNewStudentName] = useState<string>("");
+  const [newNumber, setNewNumber] = useState<string>("");
+  const [newSeries, setNewSeries] = useState<string>("");
+  const [newSubject1, setNewSubject1] = useState<string>("");
+  const [newSignature1, setNewSignature1] = useState<string>("");
+
+  // Estados para as barras de pesquisa
+  const [loanSearchQuery, setLoanSearchQuery] = useState<string>("");
+  const [warningSearchQuery, setWarningSearchQuery] = useState<string>("");
+
   const tabs = [
     { id: "loans", label: "Empréstimos" },
     { id: "warnings", label: "Advertências" },
   ];
 
+  // Sempre que os estados relevantes mudarem, atualiza o localStorage.
   useEffect(() => {
-    setUserName(localStorage.getItem("userName") || "Professor(a)");
-    setTotalTablets(Number(localStorage.getItem("totalTablets")) || 40);
-    setTotalNotebooks(Number(localStorage.getItem("totalNotebooks")) || 30);
-    setLoanRecords(JSON.parse(localStorage.getItem("loanRecords") || "[]"));
-  }, []);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("userName", userName);
+      localStorage.setItem("totalTablets", totalTablets.toString());
+      localStorage.setItem("totalNotebooks", totalNotebooks.toString());
+      localStorage.setItem("loanRecords", JSON.stringify(loanRecords));
+      localStorage.setItem("warningRecords", JSON.stringify(warningRecords));
+    }
+  }, [userName, totalTablets, totalNotebooks, loanRecords, warningRecords]);
 
-  useEffect(() => {
-    localStorage.setItem("loanRecords", JSON.stringify(loanRecords));
-    localStorage.setItem("totalTablets", totalTablets.toString());
-    localStorage.setItem("totalNotebooks", totalNotebooks.toString());
-  }, [loanRecords, totalTablets, totalNotebooks]);
+  // Filtra os registros de empréstimos de acordo com a pesquisa
+  const filteredLoanRecords = loanRecords.filter((record) =>
+    record.student.toLowerCase().includes(loanSearchQuery.toLowerCase())
+  );
+
+  // Filtra os registros de advertências de acordo com a pesquisa
+  const filteredWarningRecords = warningRecords.filter((record) =>
+    record.studentName.toLowerCase().includes(warningSearchQuery.toLowerCase()) ||
+    record.number.toString().includes(warningSearchQuery)
+  );
 
   const handleAddLoan = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -58,7 +124,11 @@ export default function Dashboard() {
       );
     }
 
-    if (loanRecords.some((record) => record.deviceId.some((id) => deviceIdsArray.includes(id)))) {
+    if (
+      loanRecords.some((record) =>
+        record.deviceId.some((id) => deviceIdsArray.includes(id))
+      )
+    ) {
       return addNotification("Dispositivo já emprestado!", "error");
     }
 
@@ -79,6 +149,7 @@ export default function Dashboard() {
         borrowDate: new Date(),
       },
     ]);
+
     newDeviceType === "Tablet"
       ? setTotalTablets((prev) => prev - deviceIdsArray.length)
       : setTotalNotebooks((prev) => prev - deviceIdsArray.length);
@@ -102,49 +173,87 @@ export default function Dashboard() {
     }
   };
 
+  // Função para adicionar advertência
+  const handleAddWarning = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (
+      !newStudentName ||
+      !newNumber ||
+      !newSeries ||
+      !newSubject1 ||
+      !newSignature1
+    ) {
+      return addNotification("Preencha todos os campos da reclamação!", "error");
+    }
+
+    setWarningRecords([
+      ...warningRecords,
+      {
+        id: Date.now(),
+        studentName: newStudentName,
+        number: newNumber,
+        series: newSeries,
+        subject1: newSubject1,
+        signature1: newSignature1,
+      },
+    ]);
+
+    addNotification("Reclamação adicionada!", "success");
+    // Limpar campos
+    setNewStudentName("");
+    setNewNumber("");
+    setNewSeries("");
+    setNewSubject1("");
+    setNewSignature1("");
+    setIsWarningModalOpen(false);
+  };
+
   return (
     <main className="p-8 max-w-7xl mx-auto">
       <section className="mb-8">
-        <h2 className="text-3xl font-semibold mb-2">Bem-vindo(a), {userName}!</h2>
-        <p className="text-gray-200">Gerencie os empréstimos de dispositivos da escola.</p>
-      </section>
-
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 border-b border-zinc-900 py-10">
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="block text-start bg-neutral-900 rounded-lg shadow p-6 hover:bg-neutral-900/75 transition cursor-pointer"
-        >
-          <h3 className="text-xl font-bold mb-2">Empréstimos</h3>
-          <p className="text-sm text-gray-300">Controle de notebooks e tablets.</p>
-        </button>
-
-        <div className="bg-neutral-900 rounded-lg shadow p-6 opacity-50 cursor-not-allowed">
-          <h3 className="text-xl font-bold mb-2">Advertências</h3>
-          <p className="text-sm text-gray-300">
-            (Em breve) Módulo para registrar e acompanhar advertências de alunos.
-          </p>
-        </div>
-
-        <div className="bg-neutral-900 rounded-lg shadow p-6 opacity-50 cursor-not-allowed">
-          <h3 className="text-xl font-bold mb-2">Relatórios</h3>
-          <p className="text-sm text-gray-300">
-            (Em breve) Gere relatórios de uso, estatísticas de advertências e mais.
-          </p>
-        </div>
+        <h2 className="text-3xl font-semibold mb-2">
+          Bem-vindo(a), {userName}!
+        </h2>
+        <p className="text-gray-200">
+          Gerencie os empréstimos e as advertências dos alunos da escola.
+        </p>
       </section>
 
       <section className="my-8 bg-zinc-950 w-min py-2 px-2 rounded-lg">
         <DefaultTabs
           tabs={tabs}
           activeTab={activeTab}
-          setActiveTab={(tabId) => setActiveTab(tabId as "loans" | "warnings")}
+          setActiveTab={(tabId) =>
+            setActiveTab(tabId as "loans" | "warnings")
+          }
           cursor="bg-zinc-900"
         />
       </section>
 
       {activeTab === "loans" && (
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Registros de Empréstimos</h2>
+          <h2 className="text-2xl font-semibold mb-4">
+            Registros de Empréstimos
+          </h2>
+          <p>Total de Tablet: {totalTablets}</p>
+          <p>Total de Notebook: {totalNotebooks}</p>
+          {/* Barra de pesquisa para empréstimos */}
+          <div className="flex my-4 gap-2">
+            <input
+              type="text"
+              value={loanSearchQuery}
+              onChange={(e) => setLoanSearchQuery(e.target.value)}
+              placeholder="Pesquisar por nome do professor"
+              className="p-2 border rounded w-[600px]"
+            />
+
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-green-500 hover:bg-green-500/75 py-2 px-5 rounded-md cursor-pointer"
+            >
+              Adicionar Empréstimo
+            </button>
+          </div>
           <div className="overflow-x-auto overflow-y-auto max-h-80">
             <table className="min-w-full table-auto">
               <thead>
@@ -158,14 +267,18 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {loanRecords.length > 0 ? (
-                  loanRecords.map((record) => (
+                {filteredLoanRecords.length > 0 ? (
+                  filteredLoanRecords.map((record) => (
                     <tr key={record.id} className="border-b border-gray-600">
                       <td className="px-4 py-3">{record.id}</td>
                       <td className="px-4 py-3">{record.student}</td>
                       <td className="px-4 py-3">{record.deviceType}</td>
-                      <td className="px-4 py-3">{record.deviceId.join(", ")}</td>
-                      <td className="px-4 py-3">{new Date(record.borrowDate).toLocaleString()}</td>
+                      <td className="px-4 py-3">
+                        {record.deviceId.join(", ")}
+                      </td>
+                      <td className="px-4 py-3">
+                        {new Date(record.borrowDate).toLocaleString()}
+                      </td>
                       <td className="px-4 py-3">
                         <button
                           onClick={() => handleReturnLoan(record.id)}
@@ -191,8 +304,65 @@ export default function Dashboard() {
 
       {activeTab === "warnings" && (
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Advertências</h2>
-          <p className="text-gray-300">Módulo de advertências em desenvolvimento.</p>
+          <h2 className="text-2xl font-semibold mb-4">
+            Registro de Advertência
+          </h2>
+          <p className="mb-4 text-sm text-gray-300">
+            Obs: Após a terceira reclamação, o aluno será informado que só virá para a escola acompanhado do pai ou responsável.
+          </p>
+          {/* Barra de pesquisa para advertências */}
+          <div className="flex mb-4 gap-2">
+            <input
+              type="text"
+              value={warningSearchQuery}
+              onChange={(e) => setWarningSearchQuery(e.target.value)}
+              placeholder="Pesquisar por nome do aluno ou número"
+              className="p-2 border rounded w-[600px]"
+            />
+
+            <button
+              onClick={() => setIsWarningModalOpen(true)}
+              className="bg-green-500 hover:bg-green-500/75 py-2 px-5 rounded-md cursor-pointer"
+            >
+              Adicionar Advertência
+            </button>
+          </div>
+          <div className="overflow-x-auto overflow-y-auto max-h-80 mb-4">
+            <table className="min-w-full table-auto">
+              <thead>
+                <tr className="bg-neutral-800/75 text-left">
+                  <th className="px-4 py-3">ID</th>
+                  <th className="px-4 py-3">Nome do Aluno</th>
+                  <th className="px-4 py-3">Número</th>
+                  <th className="px-4 py-3">Série</th>
+                  <th className="px-4 py-3">Assunto</th>
+                  <th className="px-4 py-3">Assinatura do Professor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredWarningRecords.length > 0 ? (
+                  filteredWarningRecords.map((record) => (
+                    <tr key={record.id} className="border-b border-gray-600">
+                      <td className="px-4 py-3">{record.id}</td>
+                      <td className="px-4 py-3">{record.studentName}</td>
+                      <td className="px-4 py-3">{record.number}</td>
+                      <td className="px-4 py-3">{record.series}</td>
+                      <td className="px-4 py-3 break-words">
+                        {record.subject1}
+                      </td>
+                      <td className="px-4 py-3">{record.signature1}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="text-center py-4 text-gray-400">
+                      Nenhuma reclamação encontrada.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 
@@ -210,8 +380,7 @@ export default function Dashboard() {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <h2 className="text-3xl font-semibold mb-4">Adicionar Empréstimo</h2>
         <p className="mb-4">
-          Pegue um dispositivo empréstado da escola e adicione-o ao sistema. Se o dispositivo já
-          estiver emprestado, ele será devolvido automaticamente.
+          Pegue um dispositivo emprestado da escola e adicione-o ao sistema. Se o dispositivo já estiver emprestado, ele será devolvido automaticamente.
         </p>
         <form onSubmit={handleAddLoan}>
           <label className="block mb-2">Nome do Professor</label>
@@ -237,7 +406,9 @@ export default function Dashboard() {
             </option>
           </select>
 
-          <label className="block mt-4 mb-2">Número(s) do Dispositivo</label>
+          <label className="block mt-4 mb-2">
+            Número(s) do Dispositivo
+          </label>
           <input
             type="text"
             value={newDeviceId}
@@ -248,11 +419,78 @@ export default function Dashboard() {
 
           <button
             type="submit"
-            className="w-full bg-gray-700 hover:bg-gray-700/75 font-bold py-2 mt-4 rounded transition"
+            className="w-full bg-gray-700 hover:bg-gray-700/75 font-bold py-2 mt-4 rounded transition cursor-pointer"
           >
             Adicionar
           </button>
         </form>
+      </Modal>
+
+      <Modal isOpen={isWarningModalOpen} onClose={() => setIsWarningModalOpen(false)}>
+        <h2 className="text-3xl font-semibold mb-4">Adicionar Advertência</h2>
+        <p className="mb-4">
+          Preencha a ficha individual do aluno para registrar a reclamação. Se houver mais campos do que cabem na tela, role para visualizar tudo.
+        </p>
+
+        <div className="max-h-[70vh] overflow-y-auto pr-4">
+          <form onSubmit={handleAddWarning}>
+            <label className="block mb-2">Nome do Aluno</label>
+            <input
+              type="text"
+              value={newStudentName}
+              onChange={(e) => setNewStudentName(e.target.value)}
+              className="w-full p-2 rounded border border-gray-600 focus:outline-none focus:border-blue-400"
+              placeholder="Nome do Aluno"
+            />
+
+            <label className="block mt-4 mb-2">
+              Número (Número de chamada)
+            </label>
+            <input
+              type="number"
+              value={newNumber}
+              onChange={(e) => setNewNumber(e.target.value)}
+              className="w-full p-2 rounded border border-gray-600 focus:outline-none focus:border-blue-400"
+              placeholder="Número"
+            />
+
+            <label className="block mt-4 mb-2">Série do Aluno</label>
+            <input
+              type="text"
+              value={newSeries}
+              onChange={(e) => setNewSeries(e.target.value)}
+              className="w-full p-2 rounded border border-gray-600 focus:outline-none focus:border-blue-400"
+              placeholder="Série (Ex: 3DS)"
+            />
+
+            <label className="block mt-4 mb-2">Assunto</label>
+            <input
+              type="text"
+              value={newSubject1}
+              onChange={(e) => setNewSubject1(e.target.value)}
+              className="w-full p-2 rounded border border-gray-600 focus:outline-none focus:border-blue-400"
+              placeholder="Assunto"
+            />
+
+            <label className="block mt-4 mb-2">
+              Assinatura do Professor
+            </label>
+            <input
+              type="text"
+              value={newSignature1}
+              onChange={(e) => setNewSignature1(e.target.value)}
+              className="w-full p-2 rounded border border-gray-600 focus:outline-none focus:border-blue-400"
+              placeholder="Assinatura"
+            />
+
+            <button
+              type="submit"
+              className="w-full bg-gray-700 hover:bg-gray-700/75 font-bold py-2 mt-4 rounded transition cursor-pointer"
+            >
+              Adicionar Reclamação
+            </button>
+          </form>
+        </div>
       </Modal>
     </main>
   );
