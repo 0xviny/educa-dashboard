@@ -69,7 +69,7 @@ export default function Page() {
 
         <p className="text-center text-xs text-gray-400 mt-5">
           Este é um projeto fictício para demonstrar um sistema para ajudar a escola em sua gestão
-          de Controle de Advertências e Controle de Notebooks e Tablets da escola. Projeto criado
+          de Controle de Ocorrências e Controle de Notebooks e Tablets da escola. Projeto criado
           por:{" "}
           <span className="bg-gradient-to-bl to-blue-600 from-purple-600 text-transparent bg-clip-text cursor-pointer">
             3° DS @ 2025
