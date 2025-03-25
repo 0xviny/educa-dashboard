@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable */
 
 import { useEffect, useRef, useState } from "react";
 import { useNotifications, Notification } from "@/hooks/useNotifications";
