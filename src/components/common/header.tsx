@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useNotifications, Notification } from "@/hooks/useNotifications";
-import { Bell, EllipsisVertical } from "lucide-react";
+import { Bell, EllipsisVertical, LogOut } from "lucide-react";
 import useLocalStorage from "@/hooks/useLocalStorage";
 
 export default function Header() {
@@ -95,6 +95,15 @@ export default function Header() {
         <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
           <span className="text-white font-bold">{userName.charAt(0)}</span>
         </div>
+        <button
+          onClick={() => {
+            localStorage.removeItem("authToken");
+            window.location.reload();
+          }}
+          className="cursor-pointer"
+        >
+          <LogOut className="text-red-500 inline-block" /> Sair
+        </button>
 
         {/* <div className="relative" ref={dropdownRef}>
           <button
