@@ -24,10 +24,6 @@ Criar uma aplicação funcional que permita aos gestores escolares:
 - 🔒 Sistema de autenticação de usuários (se aplicável);
 - 🧑‍🏫 Interface voltada para professores, coordenadores e técnicos.
 
-## 📷 Prints (opcional)
-
-Se desejar, adicione aqui imagens da interface ou do sistema funcionando.
-
 ## 🚀 Como rodar o projeto
 
 1. Clone o repositório:
