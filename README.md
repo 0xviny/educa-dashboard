@@ -32,10 +32,14 @@ Criar uma aplicação funcional que permita aos gestores escolares:
    ```
 
 2. Instale as dependências necessárias:
-   (Explique aqui caso use alguma linguagem que exija instalação de pacotes)
+   ```bash
+   bun install
+   ```
 
 3. Execute a aplicação:
-   (Explique o passo a passo, se necessário)
+   ```bash
+   bun run dev
+   ```
 
 ## 📚 Licença
 
