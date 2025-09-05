@@ -446,7 +446,7 @@ export default function AdvertenciasPage() {
                         name="turmaAluno"
                         value={formData.turmaAluno}
                         onChange={handleInputChange}
-                        placeholder="Ex: 9º Ano A"
+                        placeholder="Ex: 3º Ano DS"
                         required
                       />
                     </div>
