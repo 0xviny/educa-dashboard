@@ -447,10 +447,10 @@ export default function EquipamentosPage() {
                           <SelectValue placeholder="Selecione o tipo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Tablet">Tablet</SelectItem>
-                          <SelectItem value="Notebook">Notebook</SelectItem>
-                          <SelectItem value="Projetor">Projetor</SelectItem>
-                          <SelectItem value="Outro">Outro</SelectItem>
+                          <SelectItem className="cursor-pointer" value="Tablet">Tablet</SelectItem>
+                          <SelectItem  className= "cursor-pointer" value="Notebook Lenovo">Notebook Lenovo</SelectItem>
+                          <SelectItem className="cursor-pointer" value="Notebook Positivo">Notebook Positivo</SelectItem>
+                          <SelectItem className= "cursor-pointer" value="Notebook Multilaser">Notebook Multilaser</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -486,7 +486,7 @@ export default function EquipamentosPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {turmas.map((turma) => (
-                            <SelectItem key={turma} value={turma}>
+                            <SelectItem className="cursor-pointer" key={turma} value={turma}>
                               {turma}
                             </SelectItem>
                           ))}
