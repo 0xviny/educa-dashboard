@@ -294,75 +294,75 @@ export const initializeData = (): void => {
 
   usuarios.forEach((usuario) => saveUsuario(usuario))
 
-  // Criar turmas de exemplo
-  const turmas: Omit<Turma, "id">[] = [
-    {
-      nome: "6º Ano A",
-      serie: "6º Ano",
-      periodo: "Manhã",
-      professor: "Professor João",
-    },
-    {
-      nome: "7º Ano B",
-      serie: "7º Ano",
-      periodo: "Manhã",
-      professor: "Professora Maria",
-    },
-    {
-      nome: "8º Ano C",
-      serie: "8º Ano",
-      periodo: "Tarde",
-      professor: "Professor Carlos",
-    },
-    {
-      nome: "9º Ano A",
-      serie: "9º Ano",
-      periodo: "Tarde",
-      professor: "Professora Ana",
-    },
-  ]
+// Criar turmas de exemplo
+const turmas: Omit<Turma, "id">[] = [
+  {
+    nome: "3º Ano A",
+    serie: "3º Ano",
+    periodo: "Manhã",
+    professor: "Professor João",
+  },
+  {
+    nome: "3º Ano B",
+    serie: "3º Ano",
+    periodo: "Manhã",
+    professor: "Professora Maria",
+  },
+  {
+    nome: "3º Ano C",
+    serie: "3º Ano",
+    periodo: "Manhã",
+    professor: "Professor Carlos",
+  },
+  {
+    nome: "3º Ano DS",
+    serie: "3º Ano",
+    periodo: "Manhã",
+    professor: "Professora Ana",
+  },
+]
 
   turmas.forEach((turma) => saveTurma(turma))
 
   // Criar alunos de exemplo
   const alunos: Omit<Aluno, "id">[] = [
     {
-      nome: "João Silva",
-      turma: "9º Ano A",
+      nome: "Victor Hugo Rocha de Souza",
+      turma: "3º Ano DS",
       matricula: "20230001",
-      dataNascimento: "2008-05-15",
+      dataNascimento: "2008-06-17",
       responsavel: "Maria Silva",
       contato: "(11) 98765-4321",
     },
     {
-      nome: "Ana Souza",
-      turma: "7º Ano B",
+      nome: "Yan Carlos Oliveira de Sousa",
+      turma: "3º Ano DS",
       matricula: "20230002",
-      dataNascimento: "2010-03-22",
+      dataNascimento: "2007-08-13",
       responsavel: "Carlos Souza",
       contato: "(11) 98765-4322",
     },
     {
-      nome: "Pedro Almeida",
-      turma: "8º Ano C",
+      nome: "Gabriel Francisco Ancelmo Portella Jeronimo",
+      turma: "3º Ano DS",
       matricula: "20230003",
-      dataNascimento: "2009-07-10",
+      dataNascimento: "2007-12-11",
       responsavel: "Joana Almeida",
       contato: "(11) 98765-4323",
     },
     {
-      nome: "Mariana Lima",
-      turma: "6º Ano A",
+      nome: "Raissa Rodrigues da Silva",
+      turma: "3º Ano DS",
       matricula: "20230004",
-      dataNascimento: "2011-11-05",
+      dataNascimento: "2008-06-25",
       responsavel: "Roberto Lima",
       contato: "(11) 98765-4324",
     },
     {
-      nome: "Lucas Mendes",
-      turma: "9º Ano B",
+      nome: "Kauan Martins da Silva",
+      turma: "3º Ano DS",
       matricula: "20230005",
-      dataNascimento: "2008-02-18",
+      dataNascimento: "2007-12-02",
       responsavel: "Fernanda Mendes",
       contato: "(11) 98765-4325",
     },
