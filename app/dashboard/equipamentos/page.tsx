@@ -568,14 +568,15 @@ export default function EquipamentosPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 mb-4">
+          {/* Total de Tablets */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
               <CardTitle className="text-sm font-medium">Total de Tablets</CardTitle>
-              <Laptop className="h-4 w-4 text-purple-600" />
+              <Laptop className="h-3.5 w-3.5 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-xl font-bold">
                 {equipamentos
                   .filter((equip) => equip.tipo === "Tablet")
                   .reduce((acc, equip) => acc + equip.quantidade, 0)}
@@ -588,32 +589,78 @@ export default function EquipamentosPage() {
               </p>
             </CardContent>
           </Card>
+
+          {/* Total de Notebook Lenovo */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Notebooks</CardTitle>
-              <Laptop className="h-4 w-4 text-purple-600" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
+              <CardTitle className="text-sm font-medium">Total de Notebook Lenovo</CardTitle>
+              <Laptop className="h-3.5 w-3.5 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-xl font-bold">
                 {equipamentos
-                  .filter((equip) => equip.tipo === "Notebook")
+                  .filter((equip) => equip.tipo === "Notebook Lenovo")
                   .reduce((acc, equip) => acc + equip.quantidade, 0)}
               </div>
               <p className="text-xs text-slate-500">
                 {equipamentos
-                  .filter((equip) => equip.tipo === "Notebook" && equip.status === "Em uso")
+                  .filter((equip) => equip.tipo === "Notebook Lenovo" && equip.status === "Em uso")
                   .reduce((acc, equip) => acc + equip.quantidade, 0)}{" "}
                 em uso atualmente
               </p>
             </CardContent>
           </Card>
+
+          {/* Total de Notebook Positivo */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Equipamentos em Uso</CardTitle>
-              <Laptop className="h-4 w-4 text-orange-500" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
+              <CardTitle className="text-sm font-medium">Total de Notebook Positivo</CardTitle>
+              <Laptop className="h-3.5 w-3.5 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-xl font-bold">
+                {equipamentos
+                  .filter((equip) => equip.tipo === "Notebook Positivo")
+                  .reduce((acc, equip) => acc + equip.quantidade, 0)}
+              </div>
+              <p className="text-xs text-slate-500">
+                {equipamentos
+                  .filter((equip) => equip.tipo === "Notebook Positivo" && equip.status === "Em uso")
+                  .reduce((acc, equip) => acc + equip.quantidade, 0)}{" "}
+                em uso atualmente
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Total de Notebook Multilaser */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
+              <CardTitle className="text-sm font-medium">Total de Notebook Multilaser</CardTitle>
+              <Laptop className="h-3.5 w-3.5 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold">
+                {equipamentos
+                  .filter((equip) => equip.tipo === "Notebook Multilaser")
+                  .reduce((acc, equip) => acc + equip.quantidade, 0)}
+              </div>
+              <p className="text-xs text-slate-500">
+                {equipamentos
+                  .filter((equip) => equip.tipo === "Notebook Multilaser" && equip.status === "Em uso")
+                  .reduce((acc, equip) => acc + equip.quantidade, 0)}{" "}
+                em uso atualmente
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Equipamentos em Uso */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
+              <CardTitle className="text-sm font-medium">Equipamentos em Uso</CardTitle>
+              <Laptop className="h-3.5 w-3.5 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold">
                 {equipamentos
                   .filter((equip) => equip.status === "Em uso")
                   .reduce((acc, equip) => acc + equip.quantidade, 0)}
@@ -630,13 +677,15 @@ export default function EquipamentosPage() {
               </p>
             </CardContent>
           </Card>
+
+          {/* Equipamentos Disponíveis */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
               <CardTitle className="text-sm font-medium">Equipamentos Disponíveis</CardTitle>
-              <Laptop className="h-4 w-4 text-green-500" />
+              <Laptop className="h-3.5 w-3.5 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-xl font-bold">
                 {equipamentos
                   .filter((equip) => equip.status === "Devolvido")
                   .reduce((acc, equip) => acc + equip.quantidade, 0)}
