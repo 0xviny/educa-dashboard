@@ -568,7 +568,7 @@ export default function EquipamentosPage() {
           </div>
         </div>
 
-    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 mb-4">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 mb-4">
           {/* Total de Tablets */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
@@ -577,8 +577,8 @@ export default function EquipamentosPage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {equipamentos
-                  .filter((equip) => equip.tipo === "Tablet")
+                {22 - equipamentos
+                  .filter((equip) => equip.tipo === "Tablet" && equip.status === "Em uso")
                   .reduce((acc, equip) => acc + equip.quantidade, 0)}
               </div>
               <p className="text-xs text-slate-500">
@@ -598,8 +598,8 @@ export default function EquipamentosPage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {equipamentos
-                  .filter((equip) => equip.tipo === "Notebook Lenovo")
+                {20 - equipamentos
+                  .filter((equip) => equip.tipo === "Notebook Lenovo" && equip.status === "Em uso")
                   .reduce((acc, equip) => acc + equip.quantidade, 0)}
               </div>
               <p className="text-xs text-slate-500">
@@ -619,8 +619,8 @@ export default function EquipamentosPage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {equipamentos
-                  .filter((equip) => equip.tipo === "Notebook Positivo")
+                {30 - equipamentos
+                  .filter((equip) => equip.tipo === "Notebook Positivo" && equip.status === "Em uso")
                   .reduce((acc, equip) => acc + equip.quantidade, 0)}
               </div>
               <p className="text-xs text-slate-500">
@@ -640,8 +640,8 @@ export default function EquipamentosPage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {equipamentos
-                  .filter((equip) => equip.tipo === "Notebook Multilaser")
+                {40 - equipamentos
+                  .filter((equip) => equip.tipo === "Notebook Multilaser" && equip.status === "Em uso")
                   .reduce((acc, equip) => acc + equip.quantidade, 0)}
               </div>
               <p className="text-xs text-slate-500">
@@ -670,10 +670,10 @@ export default function EquipamentosPage() {
                   (equipamentos
                     .filter((equip) => equip.status === "Em uso")
                     .reduce((acc, equip) => acc + equip.quantidade, 0) /
-                    (equipamentos.reduce((acc, equip) => acc + equip.quantidade, 0) || 1)) *
+                    (22 + 20 + 30 + 40)) *
                     100
                 )}
-                % do total disponível
+                % do total
               </p>
             </CardContent>
           </Card>
@@ -686,19 +686,21 @@ export default function EquipamentosPage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {equipamentos
-                  .filter((equip) => equip.status === "Devolvido")
-                  .reduce((acc, equip) => acc + equip.quantidade, 0)}
+                {(22 + 20 + 30 + 40) -
+                  equipamentos
+                    .filter((equip) => equip.status === "Em uso")
+                    .reduce((acc, equip) => acc + equip.quantidade, 0)}
               </div>
               <p className="text-xs text-slate-500">
                 {Math.round(
-                  (equipamentos
-                    .filter((equip) => equip.status === "Devolvido")
-                    .reduce((acc, equip) => acc + equip.quantidade, 0) /
-                    (equipamentos.reduce((acc, equip) => acc + equip.quantidade, 0) || 1)) *
+                  (((22 + 20 + 30 + 40) -
+                    equipamentos
+                      .filter((equip) => equip.status === "Em uso")
+                      .reduce((acc, equip) => acc + equip.quantidade, 0)) /
+                    (22 + 20 + 30 + 40)) *
                     100
                 )}
-                % do total disponível
+                % do total
               </p>
             </CardContent>
           </Card>
