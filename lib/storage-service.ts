@@ -206,45 +206,10 @@ export const updateEquipamento = (equipamento: Equipamento): Equipamento => {
   return equipamento
 }
 
-// NOVA FUNÇÃO: emprestar equipamento
-export const emprestarEquipamento = (id: string, quantidade: number = 1): void => {
-  const equipamentos = getEquipamentos()
-  const index = equipamentos.findIndex((e) => e.id === id)
-  if (index === -1) return
-
-  const equipamento = equipamentos[index]
-
-  // Garantir que não se empreste mais do que existe
-  if (equipamento.quantidade < quantidade) {
-    throw new Error("Quantidade insuficiente para empréstimo")
-  }
-
-  // Atualiza quantidade e status
-  equipamento.quantidade -= quantidade
-  equipamento.status = "Em uso"
-
-  equipamentos[index] = equipamento
-  localStorage.setItem(STORAGE_KEYS.EQUIPAMENTOS, JSON.stringify(equipamentos))
-}
-
-export const devolverEquipamento = (id: string, quantidade: number = 1): void => {
-  const equipamentos = getEquipamentos()
-  const index = equipamentos.findIndex((e) => e.id === id)
-  if (index === -1) return
-
-  const equipamento = equipamentos[index]
-  equipamento.quantidade += quantidade
-  equipamento.status = "Devolvido"
-
-  equipamentos[index] = equipamento
-  localStorage.setItem(STORAGE_KEYS.EQUIPAMENTOS, JSON.stringify(equipamentos))
-}
-
 export const deleteEquipamento = (id: string): void => {
   const equipamentos = getEquipamentos()
   localStorage.setItem(STORAGE_KEYS.EQUIPAMENTOS, JSON.stringify(equipamentos.filter((e) => e.id !== id)))
 }
-
 
 // Funções para manipular usuários
 export const getUsuarios = (): Usuario[] => {
@@ -405,4 +370,3 @@ const turmas: Omit<Turma, "id">[] = [
 
   alunos.forEach((aluno) => saveAluno(aluno))
 }
-

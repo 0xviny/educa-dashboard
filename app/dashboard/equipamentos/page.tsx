@@ -568,72 +568,92 @@ export default function EquipamentosPage() {
           </div>
         </div>
 
-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 mb-4">
-  {["Tablet", "Notebook Lenovo", "Notebook Positivo", "Notebook Multilaser"].map((tipo) => {
-    const totalTipo = equipamentos
-      .filter((e) => e.tipo === tipo)
-      .reduce((acc, e) => acc + e.quantidade, 0)
-
-    const emUsoTipo = equipamentos
-      .filter((e) => e.tipo === tipo && e.status === "Em uso")
-      .reduce((acc, e) => acc + e.quantidade, 0)
-
-    return (
-      <Card key={tipo}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
-          <CardTitle className="text-sm font-medium">Total de {tipo}</CardTitle>
-          <Laptop className="h-3.5 w-3.5 text-purple-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-xl font-bold">{totalTipo}</div>
-          <p className="text-xs text-slate-500">{emUsoTipo} em uso atualmente</p>
-        </CardContent>
-      </Card>
-    )
-  })}
-
-  {/* Equipamentos em Uso */}
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
-      <CardTitle className="text-sm font-medium">Equipamentos em Uso</CardTitle>
-      <Laptop className="h-3.5 w-3.5 text-orange-600" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-xl font-bold">
-        {equipamentos.filter((e) => e.status === "Em uso").reduce((acc, e) => acc + e.quantidade, 0)}
-      </div>
-      <p className="text-xs text-slate-500">
-        {Math.round(
-          (equipamentos.filter((e) => e.status === "Em uso").reduce((acc, e) => acc + e.quantidade, 0) /
-            (equipamentos.reduce((acc, e) => acc + e.quantidade, 0) || 1)) *
-            100
-        )}
-        % do total disponível
-      </p>
-    </CardContent>
-  </Card>
-
-  {/* Equipamentos Disponíveis */}
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
-      <CardTitle className="text-sm font-medium">Equipamentos Disponíveis</CardTitle>
-      <Laptop className="h-3.5 w-3.5 text-green-500" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-xl font-bold">
-        {equipamentos.filter((e) => e.status === "Devolvido").reduce((acc, e) => acc + e.quantidade, 0)}
-      </div>
-      <p className="text-xs text-slate-500">
-        {Math.round(
-          (equipamentos.filter((e) => e.status === "Devolvido").reduce((acc, e) => acc + e.quantidade, 0) /
-            (equipamentos.reduce((acc, e) => acc + e.quantidade, 0) || 1)) *
-            100
-        )}
-        % do total disponível
-      </p>
-    </CardContent>
-  </Card>
-</div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Tablets</CardTitle>
+              <Laptop className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {equipamentos
+                  .filter((equip) => equip.tipo === "Tablet")
+                  .reduce((acc, equip) => acc + equip.quantidade, 0)}
+              </div>
+              <p className="text-xs text-slate-500">
+                {equipamentos
+                  .filter((equip) => equip.tipo === "Tablet" && equip.status === "Em uso")
+                  .reduce((acc, equip) => acc + equip.quantidade, 0)}{" "}
+                em uso atualmente
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Notebooks</CardTitle>
+              <Laptop className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {equipamentos
+                  .filter((equip) => equip.tipo === "Notebook")
+                  .reduce((acc, equip) => acc + equip.quantidade, 0)}
+              </div>
+              <p className="text-xs text-slate-500">
+                {equipamentos
+                  .filter((equip) => equip.tipo === "Notebook" && equip.status === "Em uso")
+                  .reduce((acc, equip) => acc + equip.quantidade, 0)}{" "}
+                em uso atualmente
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Equipamentos em Uso</CardTitle>
+              <Laptop className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {equipamentos
+                  .filter((equip) => equip.status === "Em uso")
+                  .reduce((acc, equip) => acc + equip.quantidade, 0)}
+              </div>
+              <p className="text-xs text-slate-500">
+                {Math.round(
+                  (equipamentos
+                    .filter((equip) => equip.status === "Em uso")
+                    .reduce((acc, equip) => acc + equip.quantidade, 0) /
+                    (equipamentos.reduce((acc, equip) => acc + equip.quantidade, 0) || 1)) *
+                    100
+                )}
+                % do total disponível
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Equipamentos Disponíveis</CardTitle>
+              <Laptop className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {equipamentos
+                  .filter((equip) => equip.status === "Devolvido")
+                  .reduce((acc, equip) => acc + equip.quantidade, 0)}
+              </div>
+              <p className="text-xs text-slate-500">
+                {Math.round(
+                  (equipamentos
+                    .filter((equip) => equip.status === "Devolvido")
+                    .reduce((acc, equip) => acc + equip.quantidade, 0) /
+                    (equipamentos.reduce((acc, equip) => acc + equip.quantidade, 0) || 1)) *
+                    100
+                )}
+                % do total disponível
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
         <div className="rounded-lg border bg-white shadow-sm">
           <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
