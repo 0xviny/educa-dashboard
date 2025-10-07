@@ -17,7 +17,6 @@ import {
   LogOut,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -65,7 +64,6 @@ import {
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
 
-// Importação dinâmica do componente PDFViewerDialog
 const PDFViewerDialog = dynamic(
   () => import("@/components/pdf/pdf-viewer").then((mod) => mod.PDFViewerDialog),
   {
@@ -85,32 +83,26 @@ export default function AdvertenciasPage() {
   const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-
   const [loading, setLoading] = useState(false);
-  const [resposta, setResposta] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Estado para largura do SignaturePad
   const [padWidth, setPadWidth] = useState(400);
-
-  // Estado para controlar a visualização do PDF
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
-
-  // Estados para assinaturas
   const [assinaturas, setAssinaturas] = useState<{
     professor?: string;
     direcao?: string;
     aluno?: string;
     responsavel?: string;
   }>({});
-
-  // Estado para o diálogo de assinatura
   const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
   const [signatureType, setSignatureType] = useState<
     "professor" | "direcao" | "aluno" | "responsavel"
   >("professor");
-
-  // Estado para o formulário de advertência
+  const [gravityMap, setGravityMap] = useState<
+    Record<string, { label: string; color: string; joyColor?: string }>
+  >({});
+  const [detectedGravidade, setDetectedGravidade] = useState<"leve" | "moderado" | "grave" | null>(
+    null
+  );
   const [formData, setFormData] = useState({
     nomeAluno: "",
     turmaAluno: "",
@@ -119,27 +111,43 @@ export default function AdvertenciasPage() {
     detalhes: "",
     professor: user?.nome || "",
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  // const handleInputChange1 = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-  //   setFormData({ ...formData, [e.target.name]: e.target.value });
-  // };
+  useEffect(() => {
+    async function loadGravity() {
+      try {
+        const res = await fetch("/api/adv/gravity");
+        if (res.ok) {
+          const data = await res.json();
+          setGravityMap(data);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadGravity();
+  }, []);
 
   const handleEnviar = async () => {
     setLoading(true);
     setError(null);
-
     try {
       const res = await fetch("/api/groq", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: formData.motivo }),
+        body: JSON.stringify({ message: formData.motivo, autoClassify: true }),
       });
-
-      const data = await res.json();
-
-      // Substitui o texto do motivo pelo texto melhorado
-      setFormData((prev) => ({ ...prev, motivo: data.resposta }));
-    } catch (err: any) {
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.resposta) {
+          setFormData((prev) => ({ ...prev, motivo: data.resposta }));
+        }
+        if (data?.gravityMap) setGravityMap(data.gravityMap);
+        if (data?.gravidadeDetectada) setDetectedGravidade(data.gravidadeDetectada);
+      } else {
+        setError("Erro ao aprimorar o texto");
+      }
+    } catch (err) {
       setError("Erro ao enviar o motivo. Tente novamente.");
       console.error(err);
     } finally {
@@ -147,11 +155,9 @@ export default function AdvertenciasPage() {
     }
   };
 
-  // Referências para os componentes de assinatura
   const signaturePadRef = useRef<SignaturePadRef>(null);
   const signatureDialogPadRef = useRef<SignaturePadRef>(null);
 
-  // Define largura do pad no carregamento e redimensionamento de janela
   useEffect(() => {
     function updateWidth() {
       setPadWidth(Math.min(400, window.innerWidth - 80));
@@ -161,13 +167,11 @@ export default function AdvertenciasPage() {
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
-  // Carregar dados
   useEffect(() => {
     setIsLoading(true);
     try {
       const advertenciasData = getAdvertencias();
       const alunosData = getAlunos();
-
       const advertenciasComAlunos = advertenciasData.map((adv) => {
         if (adv.alunoId) {
           const aluno = alunosData.find((a) => a.id === adv.alunoId);
@@ -179,16 +183,14 @@ export default function AdvertenciasPage() {
         }
         return adv;
       });
-
       setAdvertencias(advertenciasComAlunos);
       setAlunos(alunosData);
-
       toast({
         title: "Dados carregados",
         description: `${advertenciasComAlunos.length} advertências encontradas.`,
       });
-    } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+    } catch (err) {
+      console.error(err);
       toast({
         title: "Erro ao carregar dados",
         description: "Ocorreu um erro ao carregar as advertências.",
@@ -202,51 +204,50 @@ export default function AdvertenciasPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.nomeAluno.trim()) {
+      newErrors.nomeAluno = "O nome do aluno é obrigatório.";
+    }
+    if (!formData.turmaAluno.trim()) {
+      newErrors.turmaAluno = "A turma do aluno é obrigatória.";
+    }
+    if (!formData.motivo.trim()) {
+      newErrors.motivo = "O motivo da advertência é obrigatório.";
+    }
+    if (!assinaturas.professor) {
+      newErrors.assinatura = "A assinatura do professor é obrigatória.";
+    }
+    setFormErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleDownloadPDF = (advertencia: Advertencia) => {
     setSelectedAdvertencia(advertencia);
-    if (advertencia.assinaturas) {
-      setAssinaturas(advertencia.assinaturas);
-    } else {
-      setAssinaturas({});
-    }
+    if (advertencia.assinaturas) setAssinaturas(advertencia.assinaturas);
+    else setAssinaturas({});
     setPdfViewerOpen(true);
-    toast({
-      title: "Gerando PDF",
-      description: "O PDF está sendo gerado, aguarde um momento.",
-    });
+    toast({ title: "Gerando PDF", description: "O PDF está sendo gerado, aguarde um momento." });
   };
 
   const handleNovaAdvertencia = () => {
-    if (!formData.nomeAluno || !formData.turmaAluno) {
+    if (!validateForm()) {
       toast({
-        title: "Erro ao registrar",
-        description: "Preencha o nome e a turma do aluno",
+        title: "Campos obrigatórios pendentes",
+        description: "Por favor, preencha todos os campos indicados com erro.",
         variant: "destructive",
       });
       return;
     }
-    if (!formData.motivo) {
-      toast({
-        title: "Erro ao registrar",
-        description: "Preencha o motivo da advertência",
-        variant: "destructive",
-      });
-      return;
+    let gravidadeToSave: "leve" | "moderado" | "grave" = "leve";
+    if (detectedGravidade) {
+      gravidadeToSave = detectedGravidade;
     }
-    if (!assinaturas.professor) {
-      toast({
-        title: "Assinatura pendente",
-        description:
-          "Por favor, faça sua assinatura e clique em 'Confirmar' antes de registrar a advertência.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
-      const novaAdvertencia: Omit<Advertencia, "id"> = {
+      saveAdvertencia({
         alunoId: "",
         aluno: formData.nomeAluno,
         turma: formData.turmaAluno,
@@ -255,15 +256,27 @@ export default function AdvertenciasPage() {
         detalhes: formData.detalhes,
         status: "Pendente",
         professor: formData.professor,
+        gravidade: gravidadeToSave,
         assinaturas: { professor: assinaturas.professor },
-      };
-      saveAdvertencia(novaAdvertencia);
+      } as any);
       const advertenciasData = getAdvertencias();
-      setAdvertencias(advertenciasData);
+      const alunosData = getAlunos();
+      const advertenciasComAlunos = advertenciasData.map((adv) => {
+        if (adv.alunoId) {
+          const aluno = alunosData.find((a) => a.id === adv.alunoId);
+          return {
+            ...adv,
+            aluno: aluno?.nome || adv.aluno || "Aluno não encontrado",
+            turma: aluno?.turma || adv.turma || "Turma não encontrada",
+          };
+        }
+        return adv;
+      });
+      setAdvertencias(advertenciasComAlunos);
       setOpenAdvertenciaDialog(false);
       toast({
         title: "Advertência registrada",
-        description: "A nova advertência foi registrada com sucesso",
+        description: `Gravidade: ${gravityMap?.[gravidadeToSave]?.label || gravidadeToSave}`,
       });
       setFormData({
         nomeAluno: "",
@@ -274,7 +287,10 @@ export default function AdvertenciasPage() {
         professor: user?.nome || "",
       });
       setAssinaturas({});
-    } catch (error) {
+      setDetectedGravidade(null);
+      setFormErrors({});
+    } catch (err) {
+      console.error(err);
       toast({
         title: "Erro ao registrar",
         description: "Ocorreu um erro ao registrar a advertência",
@@ -286,9 +302,8 @@ export default function AdvertenciasPage() {
   const verPerfil = (advertencia: Advertencia) => {
     if (advertencia.alunoId) {
       const aluno = getAluno(advertencia.alunoId);
-      if (aluno) {
-        setSelectedAluno(aluno);
-      } else {
+      if (aluno) setSelectedAluno(aluno);
+      else
         setSelectedAluno({
           id: generateId(),
           nome: advertencia.aluno || "Aluno",
@@ -298,7 +313,6 @@ export default function AdvertenciasPage() {
           responsavel: "N/A",
           contato: "N/A",
         });
-      }
     } else {
       setSelectedAluno({
         id: generateId(),
@@ -346,10 +360,7 @@ export default function AdvertenciasPage() {
       });
       return;
     }
-    const novasAssinaturas = {
-      ...selectedAdvertencia.assinaturas,
-      [signatureType]: dataUrl,
-    };
+    const novasAssinaturas = { ...selectedAdvertencia.assinaturas, [signatureType]: dataUrl };
     setAssinaturas(novasAssinaturas);
     const advertenciaAtualizada: Advertencia = {
       ...selectedAdvertencia,
@@ -358,12 +369,21 @@ export default function AdvertenciasPage() {
     };
     updateAdvertencia(advertenciaAtualizada);
     const advertenciasData = getAdvertencias();
-    setAdvertencias(advertenciasData);
-    setSignatureDialogOpen(false);
-    toast({
-      title: "Assinatura salva",
-      description: `A assinatura foi salva com sucesso.`,
+    const alunosData = getAlunos();
+    const advertenciasComAlunos = advertenciasData.map((adv) => {
+      if (adv.alunoId) {
+        const aluno = alunosData.find((a) => a.id === adv.alunoId);
+        return {
+          ...adv,
+          aluno: aluno?.nome || adv.aluno || "Aluno não encontrado",
+          turma: aluno?.turma || adv.turma || "Turma não encontrada",
+        };
+      }
+      return adv;
     });
+    setAdvertencias(advertenciasComAlunos);
+    setSignatureDialogOpen(false);
+    toast({ title: "Assinatura salva", description: `A assinatura foi salva com sucesso.` });
   };
 
   const filteredAdvertencias = advertencias.filter((adv) => {
@@ -375,6 +395,8 @@ export default function AdvertenciasPage() {
       adv.professor?.toLowerCase().includes(searchLower)
     );
   });
+
+  const hasErrors = Object.values(formErrors).some((err) => err !== "");
 
   return (
     <>
@@ -428,7 +450,6 @@ export default function AdvertenciasPage() {
       </header>
 
       <div className="space-y-6 pb-10 p-10">
-        {/* Cabeçalho e botões */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-primary">Gestão de Advertências</h1>
@@ -467,8 +488,12 @@ export default function AdvertenciasPage() {
                         value={formData.nomeAluno}
                         onChange={handleInputChange}
                         placeholder="Nome completo do aluno"
+                        className={formErrors.nomeAluno ? "border-red-500" : ""}
                         required
                       />
+                      {formErrors.nomeAluno && (
+                        <p className="text-red-500 text-sm">{formErrors.nomeAluno}</p>
+                      )}
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="turmaAluno">Turma</Label>
@@ -478,8 +503,12 @@ export default function AdvertenciasPage() {
                         value={formData.turmaAluno}
                         onChange={handleInputChange}
                         placeholder="Ex: 3º Ano DS"
+                        className={formErrors.turmaAluno ? "border-red-500" : ""}
                         required
                       />
+                      {formErrors.turmaAluno && (
+                        <p className="text-red-500 text-sm">{formErrors.turmaAluno}</p>
+                      )}
                     </div>
                   </div>
                   <div className="grid gap-2">
@@ -490,13 +519,32 @@ export default function AdvertenciasPage() {
                       value={formData.motivo}
                       onChange={handleInputChange}
                       placeholder="Descreva o motivo da advertência"
+                      className={formErrors.motivo ? "border-red-500" : ""}
                       required
                     />
-
-                    <Button onClick={handleEnviar} disabled={loading || !formData.motivo.trim()}>
-                      {loading ? "Gerando..." : "Melhorar texto"}
-                    </Button>
-
+                    {formErrors.motivo && (
+                      <p className="text-red-500 text-sm">{formErrors.motivo}</p>
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={handleEnviar}
+                        disabled={loading || !formData.motivo.trim()}
+                      >
+                        {loading ? "Gerando..." : "Melhorar texto"}
+                      </Button>
+                      {detectedGravidade && gravityMap?.[detectedGravidade] && (
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium"
+                          style={{
+                            backgroundColor: gravityMap[detectedGravidade].color,
+                            color: "#fff",
+                          }}
+                        >
+                          {gravityMap[detectedGravidade].label}
+                        </span>
+                      )}
+                    </div>
                     {error && <p className="text-red-500 text-sm">{error}</p>}
                   </div>
                   <div className="grid gap-2">
@@ -537,6 +585,7 @@ export default function AdvertenciasPage() {
                       ref={signaturePadRef}
                       onSave={(dataUrl) => {
                         setAssinaturas((prev) => ({ ...prev, professor: dataUrl }));
+                        setFormErrors((prev) => ({ ...prev, assinatura: "" }));
                         toast({
                           title: "Assinatura confirmada",
                           description:
@@ -546,17 +595,28 @@ export default function AdvertenciasPage() {
                       height={150}
                       width={padWidth}
                     />
+                    {formErrors.assinatura && (
+                      <p className="text-red-500 text-sm">{formErrors.assinatura}</p>
+                    )}
                   </div>
                 </div>
                 <DialogFooter className="flex-col sm:flex-row gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => setOpenAdvertenciaDialog(false)}
+                    onClick={() => {
+                      setOpenAdvertenciaDialog(false);
+                      setFormErrors({});
+                    }}
                     className="w-full sm:w-auto"
                   >
                     Cancelar
                   </Button>
-                  <Button onClick={handleNovaAdvertencia} className="w-full sm:w-auto">
+                  <Button
+                    type="button"
+                    onClick={handleNovaAdvertencia}
+                    disabled={loading || hasErrors}
+                    className="w-full sm:w-auto"
+                  >
                     Registrar
                   </Button>
                 </DialogFooter>
@@ -565,7 +625,6 @@ export default function AdvertenciasPage() {
           </div>
         </div>
 
-        {/* Cards de estatísticas */}
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -615,7 +674,6 @@ export default function AdvertenciasPage() {
           </Card>
         </div>
 
-        {/* Tabela de advertências */}
         <div className="rounded-lg border bg-white shadow-sm">
           <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h2 className="text-lg font-semibold">Advertências Recentes</h2>
@@ -643,13 +701,25 @@ export default function AdvertenciasPage() {
                     setIsLoading(true);
                     try {
                       const advertenciasData = getAdvertencias();
-                      setAdvertencias(advertenciasData);
+                      const alunosData = getAlunos();
+                      const advertenciasComAlunos = advertenciasData.map((adv) => {
+                        if (adv.alunoId) {
+                          const aluno = alunosData.find((a) => a.id === adv.alunoId);
+                          return {
+                            ...adv,
+                            aluno: aluno?.nome || adv.aluno || "Aluno não encontrado",
+                            turma: aluno?.turma || adv.turma || "Turma não encontrada",
+                          };
+                        }
+                        return adv;
+                      });
+                      setAdvertencias(advertenciasComAlunos);
                       setSearchQuery("");
                       toast({
                         title: "Dados atualizados",
                         description: "As advertências foram atualizadas",
                       });
-                    } catch (error) {
+                    } catch (err) {
                       toast({
                         title: "Erro ao atualizar",
                         description: "Ocorreu um erro ao atualizar os dados",
@@ -712,9 +782,25 @@ export default function AdvertenciasPage() {
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate">{advertencia.motivo}</TableCell>
                       <TableCell>
-                        <Badge variant={advertencia.status === "Pendente" ? "outline" : "default"}>
-                          {advertencia.status}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={advertencia.status === "Pendente" ? "outline" : "default"}
+                          >
+                            {advertencia.status}
+                          </Badge>
+                          {advertencia.gravidade ? (
+                            <span
+                              className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium"
+                              style={{
+                                backgroundColor:
+                                  gravityMap?.[advertencia.gravidade]?.color || "#6b7280",
+                                color: "#ffffff",
+                              }}
+                            >
+                              {gravityMap?.[advertencia.gravidade]?.label || advertencia.gravidade}
+                            </span>
+                          ) : null}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-2">
@@ -741,8 +827,20 @@ export default function AdvertenciasPage() {
                               onClick={() => {
                                 if (confirm("Tem certeza que deseja excluir esta advertência?")) {
                                   deleteAdvertencia(advertencia.id);
-                                  const advertenciasData = getAdvertencias();
-                                  setAdvertencias(advertenciasData);
+                                  const newAdvertenciasData = getAdvertencias();
+                                  const newAlunosData = getAlunos();
+                                  const mapped = newAdvertenciasData.map((adv) => {
+                                    if (adv.alunoId) {
+                                      const aluno = newAlunosData.find((a) => a.id === adv.alunoId);
+                                      return {
+                                        ...adv,
+                                        aluno: aluno?.nome || adv.aluno || "Aluno não encontrado",
+                                        turma: aluno?.turma || adv.turma || "Turma não encontrada",
+                                      };
+                                    }
+                                    return adv;
+                                  });
+                                  setAdvertencias(mapped);
                                   toast({
                                     title: "Advertência excluída",
                                     description: "A advertência foi excluída com sucesso",
@@ -764,7 +862,6 @@ export default function AdvertenciasPage() {
           </div>
         </div>
 
-        {/* Dialog para perfil do aluno */}
         <Dialog open={openPerfilDialog} onOpenChange={setOpenPerfilDialog}>
           <DialogContent className="sm:max-w-[600px] w-[95vw] max-w-[95vw] sm:w-auto">
             <DialogHeader>
@@ -842,11 +939,26 @@ export default function AdvertenciasPage() {
                                 {new Date(advertencia.data).toLocaleDateString()}
                               </p>
                             </div>
-                            <Badge
-                              variant={advertencia.status === "Pendente" ? "outline" : "default"}
-                            >
-                              {advertencia.status}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant={advertencia.status === "Pendente" ? "outline" : "default"}
+                              >
+                                {advertencia.status}
+                              </Badge>
+                              {advertencia.gravidade ? (
+                                <span
+                                  className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium"
+                                  style={{
+                                    backgroundColor:
+                                      gravityMap?.[advertencia.gravidade]?.color || "#e5e7eb",
+                                    color: "#ffffff",
+                                  }}
+                                >
+                                  {gravityMap?.[advertencia.gravidade]?.label ||
+                                    advertencia.gravidade}
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
                           {advertencia.detalhes && (
                             <p className="text-sm mt-2">{advertencia.detalhes}</p>
@@ -900,7 +1012,6 @@ export default function AdvertenciasPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Componente de visualização do PDF */}
         {selectedAdvertencia && pdfViewerOpen && (
           <PDFViewerDialog
             isOpen={pdfViewerOpen}
@@ -915,7 +1026,6 @@ export default function AdvertenciasPage() {
           />
         )}
 
-        {/* Diálogo para captura de assinatura */}
         <Dialog open={signatureDialogOpen} onOpenChange={setSignatureDialogOpen}>
           <DialogContent className="sm:max-w-[500px] w-[95vw] max-w-[95vw] sm:w-auto">
             <DialogHeader>
