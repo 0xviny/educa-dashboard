@@ -86,6 +86,10 @@ export default function AdvertenciasPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
+  const [loading, setLoading] = useState(false);
+  const [resposta, setResposta] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   // Estado para largura do SignaturePad
   const [padWidth, setPadWidth] = useState(400);
 
@@ -115,6 +119,33 @@ export default function AdvertenciasPage() {
     detalhes: "",
     professor: user?.nome || "",
   });
+
+  // const handleInputChange1 = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  //   setFormData({ ...formData, [e.target.name]: e.target.value });
+  // };
+
+  const handleEnviar = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/groq", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: formData.motivo }),
+      });
+
+      const data = await res.json();
+
+      // Substitui o texto do motivo pelo texto melhorado
+      setFormData((prev) => ({ ...prev, motivo: data.resposta }));
+    } catch (err: any) {
+      setError("Erro ao enviar o motivo. Tente novamente.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Referências para os componentes de assinatura
   const signaturePadRef = useRef<SignaturePadRef>(null);
@@ -461,6 +492,12 @@ export default function AdvertenciasPage() {
                       placeholder="Descreva o motivo da advertência"
                       required
                     />
+
+                    <Button onClick={handleEnviar} disabled={loading || !formData.motivo.trim()}>
+                      {loading ? "Gerando..." : "Melhorar texto"}
+                    </Button>
+
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="detalhes">Detalhes (opcional)</Label>
