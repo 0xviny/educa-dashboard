@@ -13,6 +13,7 @@ model Users {
   nome     String
   email    String  @unique
   senha    String
+  telefone String? @unique
   perfil   String?
 }
 
