@@ -8,10 +8,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model users {
+model Users {
   id       String  @id @default(uuid())
-  name     String
+  nome     String
   email    String  @unique
-  password String
+  senha    String
   perfil   String?
+}
+
+model Turmas {
+  id          String   @id @default(uuid())
+  nome        String   @unique
+  turma       String
+  periodo     String
+
 }

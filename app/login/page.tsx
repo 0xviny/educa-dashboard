@@ -35,12 +35,13 @@ export default function LoginPage() {
     initializeData();
   }, []);
 
-  // Redirecionar se já estiver logado
-  useEffect(() => {
-    if (user) {
-      router.push("/dashboard/selecao");
-    }
-  }, [user, router]);
+    // LoginPage.tsx
+    useEffect(() => {
+      if (!isLoading && user) {
+        router.push("/dashboard/selecao");
+      }
+    }, [user, isLoading, router]);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,7 +139,7 @@ export default function LoginPage() {
               Use um dos seguintes para testar:
             </p>
             <ul className="text-center text-xs text-slate-500 mt-1">
-              <li>admin@escola.com / senha123 (Administrador)</li>
+              <li>administrador@escola.com / senha123 (Administrador)</li>
               <li>professor@escola.com / senha123 (Professor)</li>
               <li>direcao@escola.com / senha123 (Direção)</li>
             </ul>
