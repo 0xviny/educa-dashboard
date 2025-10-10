@@ -12,16 +12,48 @@ model Users {
   id       String  @id @default(uuid())
   nome     String
   email    String  @unique
+  telefone String
   senha    String
   perfil   String?
+
+  escolaId String?
+  escola   Escola? @relation(fields: [escolaId], references: [id])
+
+  sistemaId String?
+  sistema   Sistema? @relation(fields: [sistemaId], references: [id])
+}
+
+model Escola {
+  id String @id @default(uuid())
+
+  nome        String
+  endereco    String
+  cidade      String
+  estado      String
+  cep         String
+  telefone    String
+  email       String
+  diretor     String
+  viceDiretor String
+  Users       Users[]
+}
+
+model Sistema {
+  id String @id @default(uuid())
+
+  notificacoesEmail Boolean
+  notificacoesApp   Boolean
+  backupAutomatico  Boolean
+  intervaloBackup   String
+  logAcesso         Boolean
+  Users             Users[]
 }
 
 model Turmas {
-  id          String   @id @default(uuid())
-  nome        String   @unique
-  turma       String
-  periodo     String
-
+  id      String @id @default(uuid())
+  nome    String @unique
+  turma   String
+  periodo String
 }
 
 model Equipamento {

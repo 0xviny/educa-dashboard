@@ -2,30 +2,21 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { User } from "@/types";
 
-// Serviço para buscar usuários no banco
-export interface Usuario {
-  id: string;
-  nome: string;
-  email: string;
-  senha: string;
-  perfil?: string;
-}
+const getUsuarioByEmail = async (email: string): Promise<User | undefined> => {
+  const res = await fetch("/api/usuarios", { cache: "no-store" });
+  if (!res.ok) throw new Error("Erro ao buscar usuários");
 
-const getUsuarioByEmail = async (email: string): Promise<Usuario | undefined> => {
-  const res = await fetch("/api/usuarios", { cache: "no-store" })
-  if (!res.ok) throw new Error("Erro ao buscar usuários")
-
-  const usuarios: Usuario[] = await res.json()
-  return usuarios.find(u => u.email === email)
-}
-
+  const usuarios: User[] = await res.json();
+  return usuarios.find((u) => u.email === email);
+};
 
 // Chaves para localStorage
 const STORAGE_KEY = "EDUCA_USER";
 
 interface AuthContextType {
-  user: Usuario | null;
+  user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
@@ -41,7 +32,7 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<Usuario | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 

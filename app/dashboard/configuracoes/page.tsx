@@ -1,7 +1,7 @@
+// components/pages/configuracoes/ConfiguracoesPage.tsx
 "use client";
 
 import type React from "react";
-
 import { useState, useEffect } from "react";
 import {
   Save,
@@ -15,7 +15,6 @@ import {
   Upload,
   LogOut,
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,34 +41,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-
-// Tipos para as configurações
-interface PerfilConfig {
-  nome: string;
-  email: string;
-  telefone: string;
-  cargo: string;
-}
-
-interface EscolaConfig {
-  nome: string;
-  endereco: string;
-  cidade: string;
-  estado: string;
-  cep: string;
-  telefone: string;
-  email: string;
-  diretor: string;
-  viceDiretor: string;
-}
-
-interface SistemaConfig {
-  notificacoesEmail: boolean;
-  notificacoesApp: boolean;
-  backupAutomatico: boolean;
-  intervaloBackup: string;
-  logAcesso: boolean;
-}
+import { Escola, Sistema, User as UserTypes } from "@/types";
 
 export default function ConfiguracoesPage() {
   const { toast } = useToast();
@@ -77,85 +49,124 @@ export default function ConfiguracoesPage() {
   const [activeTab, setActiveTab] = useState("perfil");
   const [isLoading, setIsLoading] = useState(true);
 
-  // Estado para configurações de perfil
-  const [perfilForm, setPerfilForm] = useState<PerfilConfig>({
-    nome: user?.nome || "Administrador",
-    email: user?.email || "admin@escola.com",
-    telefone: "(12) 98765-4321",
-    cargo: "Diretor",
+  const [perfilForm, setPerfilForm] = useState<UserTypes>({
+    nome: user?.nome ?? "Administrador",
+    email: user?.email ?? "admin@escola.com",
+    telefone: user?.telefone ?? "(12) 98765-4321",
+    perfil:
+      user?.perfil === "direcao"
+        ? "Diretor"
+        : user?.perfil === "professor"
+        ? "Professor"
+        : "Administrador",
   });
 
-  // Estado para configurações da escola
-  const [escolaForm, setEscolaForm] = useState<EscolaConfig>({
-    nome: "E.E. PROFESSOR ÁLVARO ORTIZ",
-    endereco: "Rua André Cursino dos Santos s/n - Bairro do São Gonçalo",
-    cidade: "Taubaté",
-    estado: "SP",
-    cep: "12092-090",
-    telefone: "(12) 3621-1011",
-    email: "e011908a@educacao.sp.gov.br",
-    diretor: "João Silva",
-    viceDiretor: "Maria Oliveira",
+  const [escolaForm, setEscolaForm] = useState<Escola>({
+    nome: user?.escola?.nome ?? "E.E. PROFESSOR ÁLVARO ORTIZ",
+    endereco: user?.escola?.endereco ?? "Rua André Cursino dos Santos s/n - Bairro do São Gonçalo",
+    cidade: user?.escola?.cidade ?? "Taubaté",
+    estado: user?.escola?.estado ?? "SP",
+    cep: user?.escola?.cep ?? "12092-090",
+    telefone: user?.escola?.telefone ?? "(12) 3621-1011",
+    email: user?.escola?.email ?? "e011908a@educacao.sp.gov.br",
+    diretor: user?.escola?.diretor ?? "João Silva",
+    viceDiretor: user?.escola?.viceDiretor ?? "Maria Oliveira",
   });
 
-  // Estado para configurações do sistema
-  const [sistemaForm, setSystemForm] = useState<SistemaConfig>({
-    notificacoesEmail: true,
-    notificacoesApp: true,
-    backupAutomatico: true,
-    intervaloBackup: "7",
-    logAcesso: true,
+  const [sistemaForm, setSystemForm] = useState<Sistema>({
+    notificacoesEmail: user?.sistema?.notificacoesEmail ?? false,
+    notificacoesApp: user?.sistema?.notificacoesApp ?? false,
+    backupAutomatico: user?.sistema?.backupAutomatico ?? false,
+    intervaloBackup: user?.sistema?.intervaloBackup ?? "0",
+    logAcesso: user?.sistema?.logAcesso ?? false,
   });
 
-  // Carregar configurações do usuário
   useEffect(() => {
-    if (!user) return;
-
-    setIsLoading(true);
-
-    try {
-      // Carregar configurações de perfil
-      const perfilConfig = localStorage.getItem(`config_perfil_${user.id}`);
-      if (perfilConfig) {
-        setPerfilForm(JSON.parse(perfilConfig));
-      } else {
-        // Se não existir, inicializar com os dados do usuário
-        setPerfilForm({
-          nome: user.nome,
-          email: user.email,
-          telefone: "(12) 98765-4321",
-          cargo:
-            user.perfil === "direcao"
-              ? "Diretor"
-              : user.perfil === "professor"
-              ? "Professor"
-              : "Administrador",
-        });
-      }
-
-      // Carregar configurações da escola
-      const escolaConfig = localStorage.getItem(`config_escola_${user.id}`);
-      if (escolaConfig) {
-        setEscolaForm(JSON.parse(escolaConfig));
-      }
-
-      // Carregar configurações do sistema
-      const sistemaConfig = localStorage.getItem(`config_sistema_${user.id}`);
-      if (sistemaConfig) {
-        setSystemForm(JSON.parse(sistemaConfig));
-      }
-    } catch (error) {
-      toast({
-        title: "Erro ao carregar configurações",
-        description: "Ocorreu um erro ao carregar suas configurações",
-        variant: "destructive",
-      });
-    } finally {
+    if (!user) {
       setIsLoading(false);
+      return;
     }
-  }, [user, toast]);
+    setIsLoading(true);
+    (async () => {
+      try {
+        const localPerfil = localStorage.getItem(`config_perfil_${user.id}`);
+        if (localPerfil) {
+          setPerfilForm(JSON.parse(localPerfil));
+        } else {
+          setPerfilForm({
+            nome: user.nome,
+            email: user.email,
+            telefone: user.telefone ?? "(12) 98765-4321",
+            perfil:
+              user.perfil === "direcao"
+                ? "Diretor"
+                : user.perfil === "professor"
+                ? "Professor"
+                : "Administrador",
+          });
+        }
 
-  // Funções para atualizar os formulários
+        const localEscola = localStorage.getItem(`config_escola_${user.id}`);
+        if (localEscola) {
+          setEscolaForm(JSON.parse(localEscola));
+        }
+
+        const localSistema = localStorage.getItem(`config_sistema_${user.id}`);
+        if (localSistema) {
+          setSystemForm(JSON.parse(localSistema));
+        }
+
+        const res = await fetch(`/api/usuarios/config?id=${encodeURIComponent(user.id!)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            setPerfilForm((prev) => ({
+              nome: data.nome ?? prev.nome,
+              email: data.email ?? prev.email,
+              telefone: data.telefone ?? prev.telefone,
+              perfil:
+                data.perfil === "direcao"
+                  ? "Diretor"
+                  : data.perfil === "professor"
+                  ? "Professor"
+                  : "Administrador",
+            }));
+            if (data.escola) {
+              setEscolaForm({
+                nome: data.escola.nome ?? escolaForm.nome,
+                endereco: data.escola.endereco ?? escolaForm.endereco,
+                cidade: data.escola.cidade ?? escolaForm.cidade,
+                estado: data.escola.estado ?? escolaForm.estado,
+                cep: data.escola.cep ?? escolaForm.cep,
+                telefone: data.escola.telefone ?? escolaForm.telefone,
+                email: data.escola.email ?? escolaForm.email,
+                diretor: data.escola.diretor ?? escolaForm.diretor,
+                viceDiretor: data.escola.viceDiretor ?? escolaForm.viceDiretor,
+              });
+            }
+            if (data.sistema) {
+              setSystemForm({
+                notificacoesEmail: data.sistema.notificacoesEmail ?? sistemaForm.notificacoesEmail,
+                notificacoesApp: data.sistema.notificacoesApp ?? sistemaForm.notificacoesApp,
+                backupAutomatico: data.sistema.backupAutomatico ?? sistemaForm.backupAutomatico,
+                intervaloBackup: data.sistema.intervaloBackup ?? sistemaForm.intervaloBackup,
+                logAcesso: data.sistema.logAcesso ?? sistemaForm.logAcesso,
+              });
+            }
+          }
+        }
+      } catch (error) {
+        toast({
+          title: "Erro ao carregar configurações",
+          description: "Ocorreu um erro ao carregar suas configurações",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [user]);
+
   const handlePerfilChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPerfilForm((prev) => ({ ...prev, [name]: value }));
@@ -178,16 +189,53 @@ export default function ConfiguracoesPage() {
     setSystemForm((prev) => ({ ...prev, [name]: checked }));
   };
 
-  // Funções para salvar as configurações
-  const savePerfilConfig = () => {
-    if (!user) return;
+  const saveToServer = async (payload: any) => {
+    if (!user) return { ok: false };
+    try {
+      const res = await fetch("/api/usuarios/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        return { ok: false, status: res.status };
+      }
+      const data = await res.json();
+      return { ok: true, data };
+    } catch (error) {
+      return { ok: false };
+    }
+  };
 
+  const savePerfilConfig = async () => {
+    if (!user) return;
     try {
       localStorage.setItem(`config_perfil_${user.id}`, JSON.stringify(perfilForm));
-      toast({
-        title: "Perfil atualizado",
-        description: "Suas informações de perfil foram atualizadas com sucesso.",
-      });
+      const payload = {
+        id: user.id,
+        nome: perfilForm.nome,
+        email: perfilForm.email,
+        telefone: perfilForm.telefone,
+        perfil:
+          perfilForm.perfil === "Diretor"
+            ? "direcao"
+            : perfilForm.perfil === "Professor"
+            ? "professor"
+            : "admin",
+      };
+      const result = await saveToServer(payload);
+      if (result.ok) {
+        toast({
+          title: "Perfil atualizado",
+          description: "Suas informações de perfil foram atualizadas com sucesso.",
+        });
+      } else {
+        toast({
+          title: "Erro ao salvar",
+          description: "Ocorreu um erro ao salvar suas informações de perfil",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Erro ao salvar",
@@ -197,15 +245,37 @@ export default function ConfiguracoesPage() {
     }
   };
 
-  const saveEscolaConfig = () => {
+  const saveEscolaConfig = async () => {
     if (!user) return;
-
     try {
       localStorage.setItem(`config_escola_${user.id}`, JSON.stringify(escolaForm));
-      toast({
-        title: "Dados da escola atualizados",
-        description: "As informações da escola foram atualizadas com sucesso.",
-      });
+      const payload = {
+        id: user.id,
+        escola: {
+          nome: escolaForm.nome,
+          endereco: escolaForm.endereco,
+          cidade: escolaForm.cidade,
+          estado: escolaForm.estado,
+          cep: escolaForm.cep,
+          telefone: escolaForm.telefone,
+          email: escolaForm.email,
+          diretor: escolaForm.diretor,
+          viceDiretor: escolaForm.viceDiretor,
+        },
+      };
+      const result = await saveToServer(payload);
+      if (result.ok) {
+        toast({
+          title: "Dados da escola atualizados",
+          description: "As informações da escola foram atualizadas com sucesso.",
+        });
+      } else {
+        toast({
+          title: "Erro ao salvar",
+          description: "Ocorreu um erro ao salvar as informações da escola",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Erro ao salvar",
@@ -215,15 +285,33 @@ export default function ConfiguracoesPage() {
     }
   };
 
-  const saveSistemaConfig = () => {
+  const saveSistemaConfig = async () => {
     if (!user) return;
-
     try {
       localStorage.setItem(`config_sistema_${user.id}`, JSON.stringify(sistemaForm));
-      toast({
-        title: "Configurações do sistema atualizadas",
-        description: "As configurações do sistema foram atualizadas com sucesso.",
-      });
+      const payload = {
+        id: user.id,
+        sistema: {
+          notificacoesEmail: sistemaForm.notificacoesEmail,
+          notificacoesApp: sistemaForm.notificacoesApp,
+          backupAutomatico: sistemaForm.backupAutomatico,
+          intervaloBackup: sistemaForm.intervaloBackup,
+          logAcesso: sistemaForm.logAcesso,
+        },
+      };
+      const result = await saveToServer(payload);
+      if (result.ok) {
+        toast({
+          title: "Configurações do sistema atualizadas",
+          description: "As configurações do sistema foram atualizadas com sucesso.",
+        });
+      } else {
+        toast({
+          title: "Erro ao salvar",
+          description: "Ocorreu um erro ao salvar as configurações do sistema",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Erro ao salvar",
@@ -235,27 +323,24 @@ export default function ConfiguracoesPage() {
 
   const exportarConfiguracoes = () => {
     if (!user) return;
-
     try {
       const configuracoes = {
         perfil: perfilForm,
         escola: escolaForm,
         sistema: sistemaForm,
       };
-
       const blob = new Blob([JSON.stringify(configuracoes, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
       link.setAttribute(
         "download",
-        `configuracoes_${user.nome.replace(/\s+/g, "_").toLowerCase()}.json`
+        `configuracoes_${perfilForm.nome.replace(/\s+/g, "_").toLowerCase()}.json`
       );
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
       toast({
         title: "Configurações exportadas",
         description: "Suas configurações foram exportadas com sucesso",
@@ -271,31 +356,24 @@ export default function ConfiguracoesPage() {
 
   const importarConfiguracoes = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user || !e.target.files || e.target.files.length === 0) return;
-
     const file = e.target.files[0];
     const reader = new FileReader();
-
     reader.onload = (event) => {
       try {
         if (!event.target || typeof event.target.result !== "string") return;
-
         const configuracoes = JSON.parse(event.target.result);
-
         if (configuracoes.perfil) {
           setPerfilForm(configuracoes.perfil);
           localStorage.setItem(`config_perfil_${user.id}`, JSON.stringify(configuracoes.perfil));
         }
-
         if (configuracoes.escola) {
           setEscolaForm(configuracoes.escola);
           localStorage.setItem(`config_escola_${user.id}`, JSON.stringify(configuracoes.escola));
         }
-
         if (configuracoes.sistema) {
           setSystemForm(configuracoes.sistema);
           localStorage.setItem(`config_sistema_${user.id}`, JSON.stringify(configuracoes.sistema));
         }
-
         toast({
           title: "Configurações importadas",
           description: "Suas configurações foram importadas com sucesso",
@@ -308,10 +386,7 @@ export default function ConfiguracoesPage() {
         });
       }
     };
-
     reader.readAsText(file);
-
-    // Limpar o input para permitir selecionar o mesmo arquivo novamente
     e.target.value = "";
   };
 
@@ -464,8 +539,8 @@ export default function ConfiguracoesPage() {
                     <School className="mr-2 h-4 w-4 mt-3 text-slate-500" />
                     <Input
                       id="cargo"
-                      name="cargo"
-                      value={perfilForm.cargo}
+                      name="perfil"
+                      value={perfilForm.perfil}
                       onChange={handlePerfilChange}
                     />
                   </div>

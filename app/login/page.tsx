@@ -1,12 +1,10 @@
+// app/(auth)/login/page.tsx
 "use client";
 
-import type React from "react";
-
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { School } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,30 +23,29 @@ import { initializeData } from "@/lib/storage-service";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
-  const { login, user } = useAuth();
+  const { login, user, isLoading: authLoading } = useAuth();
 
-  // Inicializar dados de exemplo
   useEffect(() => {
     initializeData();
   }, []);
 
-    // LoginPage.tsx
-    useEffect(() => {
-      if (!isLoading && user) {
-        router.push("/dashboard/selecao");
-      }
-    }, [user, isLoading, router]);
-
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push("/dashboard/selecao");
+    }
+  }, [user, authLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setErrorMessage(null);
+    setIsSubmitting(true);
 
     try {
-      const success = await login(email, password);
+      const success = await login(email.trim(), password);
 
       if (success) {
         toast({
@@ -57,6 +54,7 @@ export default function LoginPage() {
         });
         router.push("/dashboard/selecao");
       } else {
+        setErrorMessage("Email ou senha incorretos");
         toast({
           title: "Erro ao fazer login",
           description: "Email ou senha incorretos",
@@ -64,13 +62,14 @@ export default function LoginPage() {
         });
       }
     } catch (error) {
+      setErrorMessage("Ocorreu um erro ao tentar fazer login");
       toast({
         title: "Erro ao fazer login",
         description: "Ocorreu um erro ao tentar fazer login",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -79,7 +78,13 @@ export default function LoginPage() {
       <div className="w-full max-w-5xl grid md:grid-cols-2 gap-8 items-center">
         <div className="hidden md:flex flex-col items-center justify-center p-6">
           <div className="relative w-full flex items-center justify-center h-80">
-            <Image alt="Educa Dashboard" src="/logoo.jpeg" width={300} height={300} className="rounded-full" />
+            <Image
+              alt="Educa Dashboard"
+              src="/logoo.jpeg"
+              width={300}
+              height={300}
+              className="rounded-full"
+            />
           </div>
           <h1 className="text-3xl font-bold text-primary mt-6 text-center">Educa Dashboard</h1>
           <p className="text-slate-600 mt-2 text-center max-w-md">
@@ -128,8 +133,9 @@ export default function LoginPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Entrando..." : "Entrar"}
+                {errorMessage && <div className="text-sm text-red-600">{errorMessage}</div>}
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? "Entrando..." : "Entrar"}
                 </Button>
               </div>
             </form>

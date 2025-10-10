@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { ToastProvider } from "@radix-ui/react-toast";
+import Toaster from "@/components/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ToastProvider>
           <AuthProvider>{children}</AuthProvider>
+          <Toaster />
         </ToastProvider>
       </body>
     </html>
