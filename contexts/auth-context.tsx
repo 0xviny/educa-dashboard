@@ -13,11 +13,13 @@ export interface Usuario {
 }
 
 const getUsuarioByEmail = async (email: string): Promise<Usuario | undefined> => {
-  const res = await fetch("/api/usuarios");
-  if (!res.ok) throw new Error("Erro ao buscar usuários");
-  const usuarios: Usuario[] = await res.json();
-  return usuarios.find(u => u.email === email);
-};
+  const res = await fetch("/api/usuarios", { cache: "no-store" })
+  if (!res.ok) throw new Error("Erro ao buscar usuários")
+
+  const usuarios: Usuario[] = await res.json()
+  return usuarios.find(u => u.email === email)
+}
+
 
 // Chaves para localStorage
 const STORAGE_KEY = "EDUCA_USER";

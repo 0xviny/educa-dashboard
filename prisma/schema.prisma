@@ -13,7 +13,6 @@ model Users {
   nome     String
   email    String  @unique
   senha    String
-  telefone String? @unique
   perfil   String?
 }
 
@@ -23,4 +22,20 @@ model Turmas {
   turma       String
   periodo     String
 
+}
+
+model Equipamento {
+  id            String   @id @default(cuid())
+  tipo          String
+  quantidade    Int
+  numerosSerie  String[]
+  professor     String
+  turma         String
+  dataRetirada  String
+  horaRetirada  String
+  status        String
+  dataDevolucao String?
+  horaDevolucao String?
+  observacoes   String?
+  assinatura    String?
 }
