@@ -71,3 +71,12 @@ model Equipamento {
   observacoes   String?
   assinatura    String?
 }
+
+model professores {
+  id            String @id @default(uuid())
+  nome          String
+  escola        String
+  telefone      String
+  email         String?
+  dataNascimento String?
+}

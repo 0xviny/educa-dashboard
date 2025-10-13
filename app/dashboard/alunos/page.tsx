@@ -19,128 +19,205 @@ import {
 } from "@/components/ui/dialog"
 import { Header } from "@/components/header"
 import { useToast } from "@/hooks/use-toast"
-import { type Aluno, deleteAluno, getAlunos, saveAluno, updateAluno } from "@/lib/storage-service"
+import {
+  type Professor,
+  deleteProfessor,
+  getProfessores,
+  saveProfessor,
+  updateProfessor,
+} from "@/lib/storage-service"
 
-export default function AlunosPage() {
-  const [alunos, setAlunos] = useState<Aluno[]>([])
-  const [filteredAlunos, setFilteredAlunos] = useState<Aluno[]>([])
+export default function ProfessoresPage() {
+  const [professores, setProfessores] = useState<Professor[]>([])
+  const [filteredProfessores, setFilteredProfessores] = useState<Professor[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [selectedAluno, setSelectedAluno] = useState<Aluno | null>(null)
+  const [selectedProfessor, setSelectedProfessor] = useState<Professor | null>(null)
   const [formData, setFormData] = useState({
     nome: "",
-    turma: "",
-    matricula: "",
+    escola: "",
+    telefone: "",
+    email: "",
     dataNascimento: "",
-    responsavel: "",
-    contato: "",
   })
   const { toast } = useToast()
 
-  // Carregar alunos
+  // Carregar professores
   useEffect(() => {
-    const loadAlunos = () => {
-      const alunosData = getAlunos()
-      setAlunos(alunosData)
-      setFilteredAlunos(alunosData)
+    const load = () => {
+      const data = getProfessores()
+      setProfessores(data)
+      setFilteredProfessores(data)
     }
-
-    loadAlunos()
+    load()
   }, [])
 
-  // Filtrar alunos
+  // Filtrar
   useEffect(() => {
     if (searchQuery.trim() === "") {
-      setFilteredAlunos(alunos)
+      setFilteredProfessores(professores)
     } else {
-      const filtered = alunos.filter(
-        (aluno) =>
-          aluno.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          aluno.turma.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          aluno.matricula.toLowerCase().includes(searchQuery.toLowerCase()),
+      const q = searchQuery.toLowerCase()
+      setFilteredProfessores(
+        professores.filter(
+          (p) =>
+            p.nome.toLowerCase().includes(q) ||
+            (p.escola ?? "").toLowerCase().includes(q) ||
+            (p.telefone ?? "").toLowerCase().includes(q),
+        ),
       )
-      setFilteredAlunos(filtered)
     }
-  }, [searchQuery, alunos])
+  }, [searchQuery, professores])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleAddAluno = () => {
-    setSelectedAluno(null)
+  const handleAddProfessor = () => {
+    setSelectedProfessor(null)
+    setFormData({ nome: "", escola: "", telefone: "", email: "", dataNascimento: "" })
+    setIsDialogOpen(true)
+  }
+
+  const handleEditProfessor = (p: Professor) => {
+    setSelectedProfessor(p)
     setFormData({
-      nome: "",
-      turma: "",
-      matricula: "",
-      dataNascimento: "",
-      responsavel: "",
-      contato: "",
+      nome: p.nome,
+      escola: p.escola ?? "",
+      telefone: p.telefone ?? "",
+      email: (p as any).email ?? "",
+      dataNascimento: p.dataNascimento ?? "",
     })
     setIsDialogOpen(true)
   }
 
-  const handleEditAluno = (aluno: Aluno) => {
-    setSelectedAluno(aluno)
-    setFormData({
-      nome: aluno.nome,
-      turma: aluno.turma,
-      matricula: aluno.matricula,
-      dataNascimento: aluno.dataNascimento,
-      responsavel: aluno.responsavel,
-      contato: aluno.contato,
-    })
-    setIsDialogOpen(true)
-  }
-
-  const handleDeleteAluno = (aluno: Aluno) => {
-    setSelectedAluno(aluno)
+  const handleDeleteProfessor = (p: Professor) => {
+    setSelectedProfessor(p)
     setIsDeleteDialogOpen(true)
   }
 
   const confirmDelete = () => {
-    if (selectedAluno) {
-      deleteAluno(selectedAluno.id)
-      setAlunos(getAlunos())
-      setIsDeleteDialogOpen(false)
-      toast({
-        title: "Aluno excluído",
-        description: "O aluno foi excluído com sucesso",
-      })
-    }
-  }
+    if (!selectedProfessor) return
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    // remover do storage (atualiza UI imediatamente)
+    deleteProfessor(selectedProfessor.id)
+    const updated = getProfessores()
+    setProfessores(updated)
+    setFilteredProfessores((prev) => {
+      if (searchQuery.trim() === "") return updated
+      const q = searchQuery.toLowerCase()
+      return updated.filter(
+        (p) =>
+          p.nome.toLowerCase().includes(q) ||
+          (p.escola ?? "").toLowerCase().includes(q) ||
+          (p.telefone ?? "").toLowerCase().includes(q)
+      )
+    })
 
-    try {
-      if (selectedAluno) {
-        // Atualizar aluno existente
-        updateAluno({
-          id: selectedAluno.id,
-          ...formData,
+    // limpar seleção e fechar diálogo (UI responsiva)
+    const deletedId = selectedProfessor.id
+    setSelectedProfessor(null)
+    setIsDeleteDialogOpen(false)
+
+    toast({
+      title: "Professor excluído",
+      description: "O professor foi excluído localmente.",
+    })
+
+    // Deletar no banco em background. Se falhar, notifica (mantemos remoção local).
+    void (async () => {
+      try {
+        const res = await fetch("/api/usuarios/config", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ professores: [deletedId] }),
         })
+        if (!res.ok) {
+          console.warn("Falha ao deletar no servidor:", await res.text())
+          toast({
+            title: "Aviso",
+            description: "Não foi possível deletar o professor no servidor.",
+            variant: "destructive",
+          })
+        }
+      } catch (err) {
+        console.warn("Erro ao chamar DELETE /api/usuarios/config:", err)
         toast({
-          title: "Aluno atualizado",
-          description: "Os dados do aluno foram atualizados com sucesso",
-        })
-      } else {
-        // Adicionar novo aluno
-        saveAluno(formData)
-        toast({
-          title: "Aluno adicionado",
-          description: "O novo aluno foi adicionado com sucesso",
+          title: "Erro de rede",
+          description: "Erro ao comunicar o servidor para deletar o professor.",
+          variant: "destructive",
         })
       }
+    })()
+  }
 
-      setAlunos(getAlunos())
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      // salvar local (otimista) e fechar diálogo imediatamente para não travar UI
+      if (selectedProfessor) {
+        updateProfessor({
+          id: selectedProfessor.id,
+          nome: formData.nome,
+          escola: formData.escola,
+          telefone: formData.telefone,
+          email: formData.email,
+          dataNascimento: formData.dataNascimento,
+        } as any)
+        toast({ title: "Professor atualizado", description: "Dados atualizados com sucesso" })
+      } else {
+        saveProfessor({
+          nome: formData.nome,
+          escola: formData.escola,
+          telefone: formData.telefone,
+          email: formData.email,
+          dataNascimento: formData.dataNascimento,
+        } as any)
+        toast({ title: "Professor adicionado", description: "Professor salvo com sucesso" })
+      }
+
+      // atualizar UI local e fechar diálogo imediatamente
+      setProfessores(getProfessores())
       setIsDialogOpen(false)
+
+      // Persistir no servidor em background (não bloqueia fechamento do modal)
+      const payload = {
+        professores: [
+          {
+            ...(selectedProfessor ? { id: selectedProfessor.id } : {}),
+            nome: formData.nome,
+            telefone: formData.telefone ?? "",
+            escola: formData.escola ?? "",
+            email: formData.email ?? undefined,
+            dataNascimento: formData.dataNascimento ?? undefined,
+          } as any,
+        ],
+      }
+
+      void (async () => {
+        try {
+          const res = await fetch("/api/usuarios/config", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+          if (!res.ok) {
+            console.warn("Erro ao persistir professor no servidor", await res.text())
+            toast({ title: "Atenção", description: "Falha ao persistir no servidor", variant: "destructive" })
+          } else {
+            toast({ title: "Servidor", description: "Professor persistido no servidor" })
+          }
+        } catch (err) {
+          console.warn("Erro fetch /api/usuarios/config:", err)
+          toast({ title: "Erro de rede", description: "Erro ao comunicar servidor", variant: "destructive" })
+        }
+      })()
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao salvar os dados do aluno",
+        description: "Ocorreu um erro ao salvar os dados do professor",
         variant: "destructive",
       })
     }
@@ -153,12 +230,12 @@ export default function AlunosPage() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-primary">Gestão de Alunos</h1>
-            <p className="text-slate-600">Cadastre e gerencie os alunos da escola</p>
+            <h1 className="text-2xl font-bold text-primary">Gestão de Professores</h1>
+            <p className="text-slate-600">Cadastre e gerencie os professores da escola</p>
           </div>
-          <Button onClick={handleAddAluno}>
+          <Button onClick={handleAddProfessor}>
             <Plus className="mr-2 h-4 w-4" />
-            Novo Aluno
+            Novo Professor
           </Button>
         </div>
 
@@ -167,7 +244,7 @@ export default function AlunosPage() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
             <Input
               type="search"
-              placeholder="Buscar alunos..."
+              placeholder="Buscar professores..."
               className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -178,43 +255,43 @@ export default function AlunosPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Matrícula</TableHead>
                   <TableHead>Nome</TableHead>
-                  <TableHead>Turma</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Contato</TableHead>
+                  <TableHead>Escola</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Data Nasc.</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAlunos.length === 0 ? (
+                {filteredProfessores.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4 text-slate-500">
-                      Nenhum aluno encontrado
+                    <TableCell colSpan={5} className="text-center py-4 text-slate-500">
+                      Nenhum professor encontrado
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredAlunos.map((aluno) => (
-                    <TableRow key={aluno.id}>
-                      <TableCell className="font-medium">{aluno.matricula}</TableCell>
-                      <TableCell>{aluno.nome}</TableCell>
-                      <TableCell>{aluno.turma}</TableCell>
-                      <TableCell>{aluno.responsavel}</TableCell>
-                      <TableCell>{aluno.contato}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleEditAluno(aluno)}>
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Editar</span>
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteAluno(aluno)}>
-                            <Trash className="h-4 w-4" />
-                            <span className="sr-only">Excluir</span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filteredProfessores.map((p) => {
+                    return (
+                      <TableRow key={p.id}>
+                        <TableCell className="font-medium">{p.nome}</TableCell>
+                        <TableCell>{p.escola ?? ""}</TableCell>
+                        <TableCell>{p.telefone ?? ""}</TableCell>
+                        <TableCell>{p.dataNascimento ?? ""}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleEditProfessor(p)}>
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Editar</span>
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteProfessor(p)}>
+                              <Trash className="h-4 w-4" />
+                              <span className="sr-only">Excluir</span>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
                 )}
               </TableBody>
             </Table>
@@ -222,13 +299,12 @@ export default function AlunosPage() {
         </div>
       </main>
 
-      {/* Diálogo para adicionar/editar aluno */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
-            <DialogTitle>{selectedAluno ? "Editar Aluno" : "Adicionar Novo Aluno"}</DialogTitle>
+            <DialogTitle>{selectedProfessor ? "Editar Professor" : "Adicionar Novo Professor"}</DialogTitle>
             <DialogDescription>
-              {selectedAluno ? "Edite as informações do aluno nos campos abaixo." : "Preencha os dados do novo aluno."}
+              {selectedProfessor ? "Edite as informações do professor nos campos abaixo." : "Preencha os dados do novo professor."}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
@@ -239,20 +315,18 @@ export default function AlunosPage() {
                   <Input id="nome" name="nome" value={formData.nome} onChange={handleInputChange} required />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="turma">Turma</Label>
-                  <Input id="turma" name="turma" value={formData.turma} onChange={handleInputChange} required />
+                  <Label htmlFor="escola">Escola</Label>
+                  <Input id="escola" name="escola" value={formData.escola} onChange={handleInputChange} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="matricula">Matrícula</Label>
-                  <Input
-                    id="matricula"
-                    name="matricula"
-                    value={formData.matricula}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  <Label htmlFor="telefone">Telefone</Label>
+                  <Input id="telefone" name="telefone" value={formData.telefone} onChange={handleInputChange} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="dataNascimento">Data de Nascimento</Label>
@@ -262,24 +336,7 @@ export default function AlunosPage() {
                     type="date"
                     value={formData.dataNascimento}
                     onChange={handleInputChange}
-                    required
                   />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="responsavel">Responsável</Label>
-                  <Input
-                    id="responsavel"
-                    name="responsavel"
-                    value={formData.responsavel}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="contato">Contato</Label>
-                  <Input id="contato" name="contato" value={formData.contato} onChange={handleInputChange} required />
                 </div>
               </div>
             </div>
@@ -287,19 +344,18 @@ export default function AlunosPage() {
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit">{selectedAluno ? "Salvar Alterações" : "Adicionar Aluno"}</Button>
+              <Button type="submit">{selectedProfessor ? "Salvar Alterações" : "Adicionar Professor"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de confirmação de exclusão */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Confirmar Exclusão</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja excluir o aluno {selectedAluno?.nome}? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir o professor {selectedProfessor?.nome}? Esta ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

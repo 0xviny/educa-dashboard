@@ -22,8 +22,8 @@ export async function GET(req: Request) {
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
-    const { id, perfil, nome, email, telefone, escola, sistema } = body;
-    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    const { id, perfil, nome, email, telefone, escola, sistema, professores } = body;
+    if (!id && !professores) return NextResponse.json({ error: "Missing id or payload" }, { status: 400 });
 
     const data: any = {};
     if (nome !== undefined) data.nome = nome;
@@ -81,15 +81,92 @@ export async function PUT(req: Request) {
       };
     }
 
-    const updatedUser = await prisma.users.update({
-      where: { id },
-      data,
-      include: { escola: true, sistema: true },
-    });
+    let updatedUser = null;
+    if (id) {
+      updatedUser = await prisma.users.update({
+        where: { id },
+        data,
+        include: { escola: true, sistema: true },
+      });
+    }
 
-    return NextResponse.json(updatedUser);
+    const processedProfessores: any[] = [];
+    if (Array.isArray(professores)) {
+      for (const p of professores) {
+        try {
+          if (p.id) {
+            const updated = await prisma.professores.update({
+              where: { id: p.id },
+              data: {
+                nome: p.nome ?? undefined,
+                telefone: p.telefone ?? undefined,
+                escola: p.escola ?? undefined,
+                email: p.email ?? undefined,
+                dataNascimento: p.dataNascimento ?? undefined,
+              },
+            });
+            processedProfessores.push(updated);
+          } else {
+            const created = await prisma.professores.create({
+              data: {
+                nome: p.nome ?? "",
+                telefone: p.telefone ?? "",
+                escola: p.escola ?? "",
+                email: p.email ?? undefined,
+                dataNascimento: p.dataNascimento ?? undefined,
+              },
+            });
+            processedProfessores.push(created);
+          }
+        } catch (profErr) {
+          console.error("Erro ao processar professor:", p, profErr);
+        }
+      }
+    }
+
+    return NextResponse.json({ user: updatedUser, professores: processedProfessores });
   } catch (error) {
     console.error("Erro ao atualizar usuário:", error);
     return NextResponse.json({ error: "Erro ao atualizar usuário" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    // aceita também ?id=... na query (caso algum cliente não envie body em DELETE)
+    const url = new URL(req.url);
+    const queryId = url.searchParams.get("id");
+
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch (e) {
+      // body vazio ou inválido — vamos lidar abaixo
+    }
+
+    let ids: string[] = [];
+
+    if (queryId) {
+      ids = [queryId];
+    } else if (Array.isArray(body?.professores)) {
+      // pode ser array de ids ou array de objetos { id }
+      ids = body.professores.map((p: any) => (typeof p === "string" ? p : p?.id)).filter(Boolean);
+    } else if (typeof body?.professores === "string") {
+      ids = [body.professores];
+    }
+
+    if (ids.length === 0) {
+      return NextResponse.json({ error: "Missing professores ids" }, { status: 400 });
+    }
+
+    // Deleta todos os professores cujos ids foram informados
+    const result = await prisma.professores.deleteMany({
+      where: { id: { in: ids } },
+    });
+
+    return NextResponse.json({ deletedCount: result.count });
+  } catch (error) {
+    console.error("Erro ao deletar professores:", error);
+    return NextResponse.json({ error: "Erro ao deletar professores" }, { status: 500 });
   }
 }

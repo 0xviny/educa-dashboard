@@ -9,6 +9,14 @@ export interface Aluno {
   contato: string;
 }
 
+export interface Professor {
+  id: string;
+  nome: string;
+  escola?: string;
+  telefone?: string;
+  dataNascimento?: string;
+}
+
 export interface Turma {
   id: string;
   nome: string;
@@ -66,6 +74,7 @@ export interface Usuario {
 // Chaves para o localStorage
 const STORAGE_KEYS = {
   ALUNOS: "educa_dashboard_alunos",
+  PROFESSORES: "educa_dashboard_professores",
   TURMAS: "educa_dashboard_turmas",
   ADVERTENCIAS: "educa_dashboard_advertencias",
   EQUIPAMENTOS: "educa_dashboard_equipamentos",
@@ -110,6 +119,40 @@ export const updateAluno = (aluno: Aluno): Aluno => {
 export const deleteAluno = (id: string): void => {
   const alunos = getAlunos();
   localStorage.setItem(STORAGE_KEYS.ALUNOS, JSON.stringify(alunos.filter((a) => a.id !== id)));
+};
+
+// Funções para manipular professores
+export const getProfessores = (): Professor[] => {
+  if (typeof window === "undefined") return [];
+  const data = localStorage.getItem(STORAGE_KEYS.PROFESSORES);
+  return data ? JSON.parse(data) : [];
+};
+
+export const getProfessor = (id: string): Professor | undefined => {
+  const profs = getProfessores();
+  return profs.find((p) => p.id === id);
+};
+
+export const saveProfessor = (professor: Omit<Professor, "id">): Professor => {
+  const profs = getProfessores();
+  const novo = { ...professor, id: generateId() };
+  localStorage.setItem(STORAGE_KEYS.PROFESSORES, JSON.stringify([...profs, novo]));
+  return novo;
+};
+
+export const updateProfessor = (professor: Professor): Professor => {
+  const profs = getProfessores();
+  const index = profs.findIndex((p) => p.id === professor.id);
+  if (index !== -1) {
+    profs[index] = professor;
+    localStorage.setItem(STORAGE_KEYS.PROFESSORES, JSON.stringify(profs));
+  }
+  return professor;
+};
+
+export const deleteProfessor = (id: string): void => {
+  const profs = getProfessores();
+  localStorage.setItem(STORAGE_KEYS.PROFESSORES, JSON.stringify(profs.filter((p) => p.id !== id)));
 };
 
 // Funções para manipular turmas
@@ -384,4 +427,11 @@ export const initializeData = (): void => {
   ];
 
   alunos.forEach((aluno) => saveAluno(aluno));
+
+  // Criar professores de exemplo
+  const professoresEx: Omit<Professor, "id">[] = [
+    { nome: "Professor João", escola: "E.E. PROFESSOR ÁLVARO ORTIZ", telefone: "(12) 3621-1011", dataNascimento: "1980-04-10" },
+    { nome: "Professora Maria", escola: "E.E. PROFESSOR ÁLVARO ORTIZ", telefone: "(12) 3621-1012", dataNascimento: "1985-09-22" },
+  ];
+  professoresEx.forEach((p) => saveProfessor(p));
 };
