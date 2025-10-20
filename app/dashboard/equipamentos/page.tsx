@@ -1,7 +1,5 @@
 "use client";
-
 import type React from "react";
-
 import { useState, useEffect } from "react";
 import {
   Laptop,
@@ -14,7 +12,6 @@ import {
   User,
   LogOut,
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -55,17 +52,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { SignaturePad } from "@/components/signature-pad";
-import {
-  type Equipamento,
-  getEquipamentos,
-  getTurmas,
-  saveEquipamento,
-  updateEquipamento,
-  deleteEquipamento,
-} from "@/lib/storage-service";
 import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
-
+type Equipamento = {
+  id: string;
+  tipo: string;
+  quantidade: number;
+  numerosSerie: string[];
+  professor: string;
+  turma: string;
+  dataRetirada: string;
+  horaRetirada: string;
+  status: string;
+  dataDevolucao?: string | null;
+  horaDevolucao?: string | null;
+  observacoes?: string | null;
+  assinatura?: string | null;
+};
 export default function EquipamentosPage() {
   const [equipamentos, setEquipamentos] = useState<Equipamento[]>([]);
   const [filteredEquipamentos, setFilteredEquipamentos] = useState<Equipamento[]>([]);
@@ -77,12 +80,8 @@ export default function EquipamentosPage() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { user, logout } = useAuth();
-
-  // Estado para assinatura
   const [assinatura, setAssinatura] = useState<string | null>(null);
   const [assinaturaConfirmada, setAssinaturaConfirmada] = useState(false);
-
-  // Estado para o formulário de equipamento
   const [formData, setFormData] = useState({
     tipo: "Tablet",
     quantidade: 1,
@@ -93,19 +92,19 @@ export default function EquipamentosPage() {
     horaRetirada: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     observacoes: "",
   });
-
-  // Carregar dados
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
       setIsLoading(true);
       try {
-        const equipamentosData = getEquipamentos();
-        const turmasData = getTurmas().map((turma) => turma.nome);
-
+        const [equipRes, turmasRes] = await Promise.all([
+          fetch("/api/equipamentos"),
+          fetch("/api/turmas"),
+        ]);
+        const equipamentosData: Equipamento[] = equipRes.ok ? await equipRes.json() : [];
+        const turmasData: { nome: string }[] = turmasRes.ok ? await turmasRes.json() : [];
         setEquipamentos(equipamentosData);
         setFilteredEquipamentos(equipamentosData);
-        setTurmas(turmasData);
-
+        setTurmas(turmasData.map((t) => t.nome));
         toast({
           title: "Dados carregados",
           description: "Os dados de equipamentos foram carregados com sucesso",
@@ -120,11 +119,8 @@ export default function EquipamentosPage() {
         setIsLoading(false);
       }
     };
-
     loadData();
   }, [toast]);
-
-  // Filtrar equipamentos quando o termo de busca mudar
   useEffect(() => {
     if (searchTerm.trim() === "") {
       setFilteredEquipamentos(equipamentos);
@@ -139,25 +135,18 @@ export default function EquipamentosPage() {
       setFilteredEquipamentos(filtered);
     }
   }, [searchTerm, equipamentos]);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
   const handleAssinaturaConfirmada = (dataUrl: string) => {
     setAssinatura(dataUrl);
     setAssinaturaConfirmada(true);
-    toast({
-      title: "Assinatura confirmada",
-      description: "Sua assinatura foi salva com sucesso",
-    });
+    toast({ title: "Assinatura confirmada", description: "Sua assinatura foi salva com sucesso" });
   };
-
   const resetForm = () => {
     setFormData({
       tipo: "Tablet",
@@ -172,8 +161,7 @@ export default function EquipamentosPage() {
     setAssinatura(null);
     setAssinaturaConfirmada(false);
   };
-
-  const handleNovoEmprestimo = () => {
+  const handleNovoEmprestimo = async () => {
     if (!formData.turma) {
       toast({
         title: "Erro ao registrar",
@@ -182,7 +170,6 @@ export default function EquipamentosPage() {
       });
       return;
     }
-
     if (!assinaturaConfirmada || !assinatura) {
       toast({
         title: "Erro ao registrar",
@@ -191,14 +178,12 @@ export default function EquipamentosPage() {
       });
       return;
     }
-
     try {
       const numerosSerie = formData.numerosSerie
         .split(",")
         .map((num) => num.trim())
         .filter((num) => num !== "");
-
-      const novoEquipamento: Omit<Equipamento, "id"> = {
+      const body = {
         tipo: formData.tipo,
         quantidade: Number(formData.quantidade),
         numerosSerie,
@@ -206,23 +191,25 @@ export default function EquipamentosPage() {
         turma: formData.turma,
         dataRetirada: formData.dataRetirada,
         horaRetirada: formData.horaRetirada,
-        status: "Em uso",
         observacoes: formData.observacoes,
         assinatura,
       };
-
-      saveEquipamento(novoEquipamento);
-
-      // Recarregar equipamentos
-      setEquipamentos(getEquipamentos());
+      const res = await fetch("/api/equipamentos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        throw new Error("Erro ao salvar");
+      }
+      const novo = await res.json();
+      setEquipamentos((prev) => [novo, ...prev]);
+      setFilteredEquipamentos((prev) => [novo, ...prev]);
       setOpenEquipamentoDialog(false);
-
       toast({
         title: "Empréstimo registrado",
         description: "O empréstimo de equipamentos foi registrado com sucesso",
       });
-
-      // Limpar formulário
       resetForm();
     } catch (error) {
       toast({
@@ -232,10 +219,8 @@ export default function EquipamentosPage() {
       });
     }
   };
-
-  const handleDevolucao = () => {
+  const handleDevolucao = async () => {
     if (!selectedEquipamento) return;
-
     if (!assinaturaConfirmada || !assinatura) {
       toast({
         title: "Erro ao registrar",
@@ -244,29 +229,28 @@ export default function EquipamentosPage() {
       });
       return;
     }
-
     try {
-      const equipamentoAtualizado: Equipamento = {
-        ...selectedEquipamento,
+      const payload = {
         status: "Devolvido",
         dataDevolucao: new Date().toISOString().split("T")[0],
         horaDevolucao: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         observacoes: formData.observacoes,
         assinatura,
       };
-
-      updateEquipamento(equipamentoAtualizado);
-
-      // Recarregar equipamentos
-      setEquipamentos(getEquipamentos());
+      const res = await fetch(`/api/equipamentos/${selectedEquipamento.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Erro ao atualizar");
+      const updated = await res.json();
+      setEquipamentos((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+      setFilteredEquipamentos((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
       setIsDevolvendo(false);
-
       toast({
         title: "Devolução registrada",
         description: "Os equipamentos foram devolvidos com sucesso",
       });
-
-      // Limpar dados
       setSelectedEquipamento(null);
       setAssinatura(null);
       setAssinaturaConfirmada(false);
@@ -279,11 +263,12 @@ export default function EquipamentosPage() {
       });
     }
   };
-
-  const handleDeleteEquipamento = (id: string) => {
+  const handleDeleteEquipamento = async (id: string) => {
     try {
-      deleteEquipamento(id);
-      setEquipamentos(getEquipamentos());
+      const res = await fetch(`/api/equipamentos/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Erro ao excluir");
+      setEquipamentos((prev) => prev.filter((e) => e.id !== id));
+      setFilteredEquipamentos((prev) => prev.filter((e) => e.id !== id));
       toast({
         title: "Equipamento excluído",
         description: "O registro de equipamento foi excluído com sucesso",
@@ -296,19 +281,24 @@ export default function EquipamentosPage() {
       });
     }
   };
-
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      setEquipamentos(getEquipamentos());
-      setIsLoading(false);
+    try {
+      const res = await fetch("/api/equipamentos");
+      const equipamentosData: Equipamento[] = res.ok ? await res.json() : [];
+      setEquipamentos(equipamentosData);
+      setFilteredEquipamentos(equipamentosData);
+      toast({ title: "Dados atualizados", description: "Os equipamentos foram atualizados" });
+    } catch (error) {
       toast({
-        title: "Dados atualizados",
-        description: "Os equipamentos foram atualizados",
+        title: "Erro ao atualizar",
+        description: "Ocorreu um erro ao atualizar os dados",
+        variant: "destructive",
       });
-    }, 500);
+    } finally {
+      setIsLoading(false);
+    }
   };
-
   const exportToCSV = () => {
     try {
       const headers = [
@@ -323,7 +313,6 @@ export default function EquipamentosPage() {
         "Data Devolução",
         "Hora Devolução",
       ];
-
       const csvData = filteredEquipamentos.map((equip) => [
         equip.id,
         equip.tipo,
@@ -336,9 +325,7 @@ export default function EquipamentosPage() {
         equip.dataDevolucao || "",
         equip.horaDevolucao || "",
       ]);
-
       const csvContent = [headers.join(","), ...csvData.map((row) => row.join(","))].join("\n");
-
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -348,7 +335,6 @@ export default function EquipamentosPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
       toast({
         title: "Exportação concluída",
         description: "Os dados foram exportados com sucesso",
@@ -361,7 +347,6 @@ export default function EquipamentosPage() {
       });
     }
   };
-
   return (
     <>
       <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
@@ -386,7 +371,6 @@ export default function EquipamentosPage() {
             </Badge>
           )}
         </div>
-
         <div className="ml-auto flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -447,10 +431,18 @@ export default function EquipamentosPage() {
                           <SelectValue placeholder="Selecione o tipo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem className="cursor-pointer" value="Tablet">Tablet</SelectItem>
-                          <SelectItem  className= "cursor-pointer" value="Notebook Lenovo">Notebook Lenovo</SelectItem>
-                          <SelectItem className="cursor-pointer" value="Notebook Positivo">Notebook Positivo</SelectItem>
-                          <SelectItem className= "cursor-pointer" value="Notebook Multilaser">Notebook Multilaser</SelectItem>
+                          <SelectItem className="cursor-pointer" value="Tablet">
+                            Tablet
+                          </SelectItem>
+                          <SelectItem className="cursor-pointer" value="Notebook Lenovo">
+                            Notebook Lenovo
+                          </SelectItem>
+                          <SelectItem className="cursor-pointer" value="Notebook Positivo">
+                            Notebook Positivo
+                          </SelectItem>
+                          <SelectItem className="cursor-pointer" value="Notebook Multilaser">
+                            Notebook Multilaser
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -567,9 +559,7 @@ export default function EquipamentosPage() {
             </Dialog>
           </div>
         </div>
-
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 mb-4">
-          {/* Total de Tablets */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
               <CardTitle className="text-sm font-medium">Total de Tablets</CardTitle>
@@ -577,9 +567,10 @@ export default function EquipamentosPage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {22 - equipamentos
-                  .filter((equip) => equip.tipo === "Tablet" && equip.status === "Em uso")
-                  .reduce((acc, equip) => acc + equip.quantidade, 0)}
+                {22 -
+                  equipamentos
+                    .filter((equip) => equip.tipo === "Tablet" && equip.status === "Em uso")
+                    .reduce((acc, equip) => acc + equip.quantidade, 0)}
               </div>
               <p className="text-xs text-slate-500">
                 {equipamentos
@@ -589,8 +580,6 @@ export default function EquipamentosPage() {
               </p>
             </CardContent>
           </Card>
-
-          {/* Total de Notebook Lenovo */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
               <CardTitle className="text-sm font-medium">Total de Notebook Lenovo</CardTitle>
@@ -598,9 +587,12 @@ export default function EquipamentosPage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {20 - equipamentos
-                  .filter((equip) => equip.tipo === "Notebook Lenovo" && equip.status === "Em uso")
-                  .reduce((acc, equip) => acc + equip.quantidade, 0)}
+                {20 -
+                  equipamentos
+                    .filter(
+                      (equip) => equip.tipo === "Notebook Lenovo" && equip.status === "Em uso"
+                    )
+                    .reduce((acc, equip) => acc + equip.quantidade, 0)}
               </div>
               <p className="text-xs text-slate-500">
                 {equipamentos
@@ -610,8 +602,6 @@ export default function EquipamentosPage() {
               </p>
             </CardContent>
           </Card>
-
-          {/* Total de Notebook Positivo */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
               <CardTitle className="text-sm font-medium">Total de Notebook Positivo</CardTitle>
@@ -619,20 +609,23 @@ export default function EquipamentosPage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {30 - equipamentos
-                  .filter((equip) => equip.tipo === "Notebook Positivo" && equip.status === "Em uso")
-                  .reduce((acc, equip) => acc + equip.quantidade, 0)}
+                {30 -
+                  equipamentos
+                    .filter(
+                      (equip) => equip.tipo === "Notebook Positivo" && equip.status === "Em uso"
+                    )
+                    .reduce((acc, equip) => acc + equip.quantidade, 0)}
               </div>
               <p className="text-xs text-slate-500">
                 {equipamentos
-                  .filter((equip) => equip.tipo === "Notebook Positivo" && equip.status === "Em uso")
+                  .filter(
+                    (equip) => equip.tipo === "Notebook Positivo" && equip.status === "Em uso"
+                  )
                   .reduce((acc, equip) => acc + equip.quantidade, 0)}{" "}
                 em uso atualmente
               </p>
             </CardContent>
           </Card>
-
-          {/* Total de Notebook Multilaser */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
               <CardTitle className="text-sm font-medium">Total de Notebook Multilaser</CardTitle>
@@ -640,20 +633,23 @@ export default function EquipamentosPage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {40 - equipamentos
-                  .filter((equip) => equip.tipo === "Notebook Multilaser" && equip.status === "Em uso")
-                  .reduce((acc, equip) => acc + equip.quantidade, 0)}
+                {40 -
+                  equipamentos
+                    .filter(
+                      (equip) => equip.tipo === "Notebook Multilaser" && equip.status === "Em uso"
+                    )
+                    .reduce((acc, equip) => acc + equip.quantidade, 0)}
               </div>
               <p className="text-xs text-slate-500">
                 {equipamentos
-                  .filter((equip) => equip.tipo === "Notebook Multilaser" && equip.status === "Em uso")
+                  .filter(
+                    (equip) => equip.tipo === "Notebook Multilaser" && equip.status === "Em uso"
+                  )
                   .reduce((acc, equip) => acc + equip.quantidade, 0)}{" "}
                 em uso atualmente
               </p>
             </CardContent>
           </Card>
-
-          {/* Equipamentos em Uso */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
               <CardTitle className="text-sm font-medium">Equipamentos em Uso</CardTitle>
@@ -677,8 +673,6 @@ export default function EquipamentosPage() {
               </p>
             </CardContent>
           </Card>
-
-          {/* Equipamentos Disponíveis */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
               <CardTitle className="text-sm font-medium">Equipamentos Disponíveis</CardTitle>
@@ -686,14 +680,20 @@ export default function EquipamentosPage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl font-bold">
-                {(22 + 20 + 30 + 40) -
+                {22 +
+                  20 +
+                  30 +
+                  40 -
                   equipamentos
                     .filter((equip) => equip.status === "Em uso")
                     .reduce((acc, equip) => acc + equip.quantidade, 0)}
               </div>
               <p className="text-xs text-slate-500">
                 {Math.round(
-                  (((22 + 20 + 30 + 40) -
+                  ((22 +
+                    20 +
+                    30 +
+                    40 -
                     equipamentos
                       .filter((equip) => equip.status === "Em uso")
                       .reduce((acc, equip) => acc + equip.quantidade, 0)) /
@@ -705,7 +705,6 @@ export default function EquipamentosPage() {
             </CardContent>
           </Card>
         </div>
-
         <div className="rounded-lg border bg-white shadow-sm">
           <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h2 className="text-lg font-semibold">Empréstimos de Equipamentos</h2>
@@ -828,8 +827,6 @@ export default function EquipamentosPage() {
             </Table>
           </div>
         </div>
-
-        {/* Dialog para devolução de equipamentos */}
         <Dialog open={isDevolvendo} onOpenChange={setIsDevolvendo}>
           <DialogContent className="sm:max-w-[525px]">
             <DialogHeader>
