@@ -80,3 +80,15 @@ model professores {
   email         String?
   dataNascimento String?
 }
+
+model Advertencias {
+  id          String @id @default(uuid())
+  alunoNome   String
+  turma       String
+  motivo      String
+  detalhes    String?
+  data        String
+  professor   String
+  status      String
+  assinatura  String?
+}

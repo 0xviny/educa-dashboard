@@ -168,37 +168,25 @@ export default function AdvertenciasPage() {
   }, []);
 
   useEffect(() => {
-    setIsLoading(true);
-    try {
-      const advertenciasData = getAdvertencias();
-      const alunosData = getAlunos();
-      const advertenciasComAlunos = advertenciasData.map((adv) => {
-        if (adv.alunoId) {
-          const aluno = alunosData.find((a) => a.id === adv.alunoId);
-          return {
-            ...adv,
-            aluno: aluno?.nome || adv.aluno || "Aluno não encontrado",
-            turma: aluno?.turma || adv.turma || "Turma não encontrada",
-          };
-        }
-        return adv;
-      });
-      setAdvertencias(advertenciasComAlunos);
-      setAlunos(alunosData);
-      toast({
-        title: "Dados carregados",
-        description: `${advertenciasComAlunos.length} advertências encontradas.`,
-      });
-    } catch (err) {
-      console.error(err);
-      toast({
-        title: "Erro ao carregar dados",
-        description: "Ocorreu um erro ao carregar as advertências.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    // carregar do servidor em vez do storage local
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch("/api/advertencias");
+        const data = res.ok ? await res.json() : [];
+        setAdvertencias(data);
+        // carregar alunos locais (se ainda usar getAlunos para relacionar)
+        const alunosData = getAlunos?.() ?? [];
+        setAlunos(alunosData);
+        toast({ title: "Dados carregados", description: `${data.length} advertências encontradas.` });
+      } catch (err) {
+        console.error(err);
+        toast({ title: "Erro ao carregar dados", description: "Falha ao carregar advertências", variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
   }, [toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -233,69 +221,48 @@ export default function AdvertenciasPage() {
     toast({ title: "Gerando PDF", description: "O PDF está sendo gerado, aguarde um momento." });
   };
 
-  const handleNovaAdvertencia = () => {
+  const handleNovaAdvertencia = async () => {
     if (!validateForm()) {
-      toast({
-        title: "Campos obrigatórios pendentes",
-        description: "Por favor, preencha todos os campos indicados com erro.",
-        variant: "destructive",
-      });
+      toast({ title: "Campos obrigatórios pendentes", description: "Preencha os campos", variant: "destructive" });
       return;
     }
-    let gravidadeToSave: "leve" | "moderado" | "grave" = "leve";
-    if (detectedGravidade) {
-      gravidadeToSave = detectedGravidade;
-    }
+    setLoading(true);
     try {
-      saveAdvertencia({
-        alunoId: "",
+      const body = {
         aluno: formData.nomeAluno,
         turma: formData.turmaAluno,
         data: formData.data,
         motivo: formData.motivo,
         detalhes: formData.detalhes,
-        status: "Pendente",
         professor: formData.professor,
-        gravidade: gravidadeToSave,
-        assinaturas: { professor: assinaturas.professor },
-      } as any);
-      const advertenciasData = getAdvertencias();
-      const alunosData = getAlunos();
-      const advertenciasComAlunos = advertenciasData.map((adv) => {
-        if (adv.alunoId) {
-          const aluno = alunosData.find((a) => a.id === adv.alunoId);
-          return {
-            ...adv,
-            aluno: aluno?.nome || adv.aluno || "Aluno não encontrado",
-            turma: aluno?.turma || adv.turma || "Turma não encontrada",
-          };
-        }
-        return adv;
+        // status deve ser "Pendente" ao criar
+        status: "Pendente",
+        // gravidade permanece separada (leve/moderado/grave)
+        gravidade: detectedGravidade ?? null,
+        assinaturas: { professor: assinaturas.professor ?? null },
+      };
+      const res = await fetch("/api/advertencias", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
-      setAdvertencias(advertenciasComAlunos);
+      if (!res.ok) throw new Error(await res.text());
+      const created = await res.json();
+      setAdvertencias((prev) => [created, ...prev]);
       setOpenAdvertenciaDialog(false);
-      toast({
-        title: "Advertência registrada",
-        description: `Gravidade: ${gravityMap?.[gravidadeToSave]?.label || gravidadeToSave}`,
-      });
-      setFormData({
-        nomeAluno: "",
-        turmaAluno: "",
-        data: new Date().toISOString().split("T")[0],
-        motivo: "",
-        detalhes: "",
-        professor: user?.nome || "",
-      });
+      const gravidadeLabel = body.gravidade
+        ? (gravityMap?.[body.gravidade as string]?.label || body.gravidade)
+        : "Não definida";
+      toast({ title: "Advertência registrada", description: `Gravidade: ${gravidadeLabel}` });
+      setFormData({ nomeAluno: "", turmaAluno: "", data: new Date().toISOString().split("T")[0], motivo: "", detalhes: "", professor: user?.nome || "" });
       setAssinaturas({});
       setDetectedGravidade(null);
       setFormErrors({});
     } catch (err) {
-      console.error(err);
-      toast({
-        title: "Erro ao registrar",
-        description: "Ocorreu um erro ao registrar a advertência",
-        variant: "destructive",
-      });
+      console.error("Erro ao criar advertência:", err);
+      toast({ title: "Erro ao registrar", description: "Falha ao registrar advertência", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -349,7 +316,7 @@ export default function AdvertenciasPage() {
     });
   };
 
-  const handleSaveSignature = () => {
+  const handleSaveSignature = async () => {
     if (!selectedAdvertencia) return;
     const dataUrl = signatureDialogPadRef.current?.getDataURL();
     if (!dataUrl) {
@@ -360,30 +327,97 @@ export default function AdvertenciasPage() {
       });
       return;
     }
-    const novasAssinaturas = { ...selectedAdvertencia.assinaturas, [signatureType]: dataUrl };
-    setAssinaturas(novasAssinaturas);
+
+    const novasAssinaturas = { ...(selectedAdvertencia.assinaturas ?? {}), [signatureType]: dataUrl };
+
+    // cópia para rollback
+    const previous = selectedAdvertencia;
+
+    // atualização otimista apenas no estado (não ler localStorage)
     const advertenciaAtualizada: Advertencia = {
       ...selectedAdvertencia,
       assinaturas: novasAssinaturas,
       status: "Assinada",
     };
-    updateAdvertencia(advertenciaAtualizada);
-    const advertenciasData = getAdvertencias();
-    const alunosData = getAlunos();
-    const advertenciasComAlunos = advertenciasData.map((adv) => {
-      if (adv.alunoId) {
-        const aluno = alunosData.find((a) => a.id === adv.alunoId);
-        return {
-          ...adv,
-          aluno: aluno?.nome || adv.aluno || "Aluno não encontrado",
-          turma: aluno?.turma || adv.turma || "Turma não encontrada",
-        };
-      }
-      return adv;
-    });
-    setAdvertencias(advertenciasComAlunos);
+
+    setAdvertencias((prev) => prev.map((a) => (a.id === advertenciaAtualizada.id ? advertenciaAtualizada : a)));
     setSignatureDialogOpen(false);
     toast({ title: "Assinatura salva", description: `A assinatura foi salva com sucesso.` });
+
+    // Persistir no servidor e tratar falhas (faz rollback se necessário)
+    try {
+      const res = await fetch(`/api/advertencias/${advertenciaAtualizada.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          aluno: advertenciaAtualizada.aluno,
+          turma: advertenciaAtualizada.turma,
+          motivo: advertenciaAtualizada.motivo,
+          data: advertenciaAtualizada.data,
+          professor: advertenciaAtualizada.professor,
+          assinaturas: novasAssinaturas,
+          status: "Assinada",
+          detalhes: advertenciaAtualizada.detalhes ?? null,
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "Erro no servidor");
+        // rollback no estado
+        setAdvertencias((prev) => prev.map((a) => (a.id === previous.id ? previous : a)));
+        toast({
+          title: "Erro ao persistir assinatura",
+          description: `Servidor respondeu com erro: ${text}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // opcional: atualizar localStorage se usar storage-service
+      try {
+        updateAdvertencia(advertenciaAtualizada);
+      } catch {
+        // ignore
+      }
+    } catch (err) {
+      // rollback no estado
+      setAdvertencias((prev) => prev.map((a) => (a.id === previous.id ? previous : a)));
+      console.error("Erro ao persistir assinatura no servidor:", err);
+      toast({
+        title: "Erro de rede",
+        description: "Assinatura salva localmente, falha ao persistir no servidor.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAdvertencia = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir esta advertência?")) return;
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/advertencias/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "Erro ao excluir no servidor");
+        throw new Error(text || "Erro ao excluir");
+      }
+      setAdvertencias((prev) => prev.filter((a) => a.id !== id));
+      toast({ title: "Advertência excluída", description: "A advertência foi removida com sucesso." });
+    } catch (err) {
+      console.error("Erro ao excluir advertência:", err);
+      // Fallback to local storage deletion if available
+      try {
+        deleteAdvertencia(id);
+        setAdvertencias((prev) => prev.filter((a) => a.id !== id));
+        toast({ title: "Advertência excluída (local)", description: "Removida do armazenamento local." });
+      } catch (e) {
+        console.error("Fallback de exclusão falhou:", e);
+        toast({ title: "Erro ao excluir", description: "Não foi possível excluir a advertência.", variant: "destructive" });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const filteredAdvertencias = advertencias.filter((adv) => {
@@ -824,29 +858,7 @@ export default function AdvertenciasPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => {
-                                if (confirm("Tem certeza que deseja excluir esta advertência?")) {
-                                  deleteAdvertencia(advertencia.id);
-                                  const newAdvertenciasData = getAdvertencias();
-                                  const newAlunosData = getAlunos();
-                                  const mapped = newAdvertenciasData.map((adv) => {
-                                    if (adv.alunoId) {
-                                      const aluno = newAlunosData.find((a) => a.id === adv.alunoId);
-                                      return {
-                                        ...adv,
-                                        aluno: aluno?.nome || adv.aluno || "Aluno não encontrado",
-                                        turma: aluno?.turma || adv.turma || "Turma não encontrada",
-                                      };
-                                    }
-                                    return adv;
-                                  });
-                                  setAdvertencias(mapped);
-                                  toast({
-                                    title: "Advertência excluída",
-                                    description: "A advertência foi excluída com sucesso",
-                                  });
-                                }
-                              }}
+                              onClick={() => handleDeleteAdvertencia(advertencia.id)}
                             >
                               <Trash className="h-4 w-4" />
                               <span className="sr-only">Excluir</span>

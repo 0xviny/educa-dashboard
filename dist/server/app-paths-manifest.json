@@ -1,0 +1,8 @@
+{
+  "/api/advertencias/route": "app/api/advertencias/route.js",
+  "/api/adv/gravity/route": "app/api/adv/gravity/route.js",
+  "/api/advertencias/[id]/route": "app/api/advertencias/[id]/route.js",
+  "/dashboard/selecao/page": "app/dashboard/selecao/page.js",
+  "/dashboard/equipamentos/page": "app/dashboard/equipamentos/page.js",
+  "/dashboard/advertencias/page": "app/dashboard/advertencias/page.js"
+}

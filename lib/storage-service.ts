@@ -14,6 +14,7 @@ export interface Professor {
   nome: string;
   escola?: string;
   telefone?: string;
+  email?: string;           // adicionado email
   dataNascimento?: string;
 }
 
@@ -29,21 +30,22 @@ export type Gravidade = "leve" | "moderado" | "grave";
 
 export interface Advertencia {
   id: string;
-  alunoId: string;
+  // aceitar tanto alunoId (quando houver vínculo) quanto aluno (nome legível)
+  alunoId?: string;
   aluno?: string; // Nome do aluno (para exibição)
   turma?: string; // Nome da turma (para exibição)
   data: string;
   motivo: string;
-  detalhes?: string;
-  status: "Pendente" | "Assinada";
-  professor: string;
+  detalhes?: string | null;
+  status?: "Pendente" | "Assinada";
+  professor?: string;
   assinaturas?: {
     professor?: string;
     direcao?: string;
     aluno?: string;
     responsavel?: string;
-  };
-  gravidade?: Gravidade;
+  } | null;
+  gravidade?: Gravidade | null;
 }
 
 export interface Equipamento {
@@ -430,8 +432,8 @@ export const initializeData = (): void => {
 
   // Criar professores de exemplo
   const professoresEx: Omit<Professor, "id">[] = [
-    { nome: "Professor João", escola: "E.E. PROFESSOR ÁLVARO ORTIZ", telefone: "(12) 3621-1011", dataNascimento: "1980-04-10" },
-    { nome: "Professora Maria", escola: "E.E. PROFESSOR ÁLVARO ORTIZ", telefone: "(12) 3621-1012", dataNascimento: "1985-09-22" },
+    { nome: "Professor João", escola: "E.E. PROFESSOR ÁLVARO ORTIZ", telefone: "(12) 3621-1011", email: "joao@escola.com", dataNascimento: "1980-04-10" },
+    { nome: "Professora Maria", escola: "E.E. PROFESSOR ÁLVARO ORTIZ", telefone: "(12) 3621-1012", email: "maria@escola.com", dataNascimento: "1985-09-22" },
   ];
   professoresEx.forEach((p) => saveProfessor(p));
 };
